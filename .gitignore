@@ -1,0 +1,5 @@
+node_modules/
+*.mmb
+*.db
+.env
+.DS_Store
