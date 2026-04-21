@@ -3,7 +3,18 @@
 ## Overview
 This Proof of Concept (POC) demonstrates a non-intrusive, "Offline-First" synchronization system for Money Manager Ex (MMEX). The goal is to enable seamless multi-device sync (Windows <-> Cloud <-> Android) without requiring any changes to the existing MMEX C++ desktop codebase.
 
-### Additional file
+### ⚠️ IMPORTANT: DISCLAIMER & WARNING
+
+**This is a Proof of Concept (POC).** This software is provided for **educational and testing purposes only**. It is **NOT** intended for use with real, production, or important financial databases.
+
+* **No Warranty:** This code is provided "as is" without any warranty of any kind. 
+* **Liability:** The author(s) decline any responsibility for data loss, database corruption, or financial discrepancies resulting from the use of this software.
+* **Safety First:** Always use a **copy** of your database (e.g., `sample_db.mmb`) for testing.
+
+> **Funny Warning:**
+> Using this script on your primary financial database is a great way to discover your inner "minimalist" by accidentally deleting your entire net worth. If your bank account suddenly looks as empty as a fridge on a Monday morning, don't say we didn't warn you! 💸🔥
+
+### Additional info file
 - [README_POCKETBASE.md](README_POCKETBASE.md): Pocketbase setup 
 - [task_list.md](task_list.md): task list for the POC
 

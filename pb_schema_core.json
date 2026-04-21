@@ -1,0 +1,227 @@
+[
+    {
+        "name": "INFOTABLE_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "INFOID",
+                "type": "number"
+            },
+            {
+                "name": "INFONAME",
+                "type": "text"
+            },
+            {
+                "name": "INFOVALUE",
+                "type": "text"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    },
+    {
+        "name": "CATEGORY_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "CATEGID",
+                "type": "number"
+            },
+            {
+                "name": "CATEGNAME",
+                "type": "text"
+            },
+            {
+                "name": "ACTIVE",
+                "type": "number"
+            },
+            {
+                "name": "PARENTID",
+                "type": "number"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    },
+    {
+        "name": "PAYEE_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "PAYEEID",
+                "type": "number"
+            },
+            {
+                "name": "PAYEENAME",
+                "type": "text"
+            },
+            {
+                "name": "ACTIVE",
+                "type": "number"
+            },
+            {
+                "name": "CATEGID",
+                "type": "number"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    },
+    {
+        "name": "ACCOUNTLIST_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "ACCOUNTID",
+                "type": "number"
+            },
+            {
+                "name": "ACCOUNTNAME",
+                "type": "text"
+            },
+            {
+                "name": "STATUS",
+                "type": "text"
+            },
+            {
+                "name": "INITIALBAL",
+                "type": "number"
+            },
+            {
+                "name": "CURRENCYID",
+                "type": "number"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    },
+    {
+        "name": "CHECKINGACCOUNT_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "TRANSID",
+                "type": "number"
+            },
+            {
+                "name": "ACCOUNTID",
+                "type": "number"
+            },
+            {
+                "name": "TOACCOUNTID",
+                "type": "number"
+            },
+            {
+                "name": "PAYEEID",
+                "type": "number"
+            },
+            {
+                "name": "TRANSCODE",
+                "type": "text"
+            },
+            {
+                "name": "TRANSAMOUNT",
+                "type": "number"
+            },
+            {
+                "name": "STATUS",
+                "type": "text"
+            },
+            {
+                "name": "CATEGID",
+                "type": "number"
+            },
+            {
+                "name": "TRANSDATE",
+                "type": "text"
+            },
+            {
+                "name": "NOTES",
+                "type": "text"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    },
+    {
+        "name": "BILLSDEPOSITS_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "BDID",
+                "type": "number"
+            },
+            {
+                "name": "ACCOUNTID",
+                "type": "number"
+            },
+            {
+                "name": "PAYEEID",
+                "type": "number"
+            },
+            {
+                "name": "TRANSCODE",
+                "type": "text"
+            },
+            {
+                "name": "TRANSAMOUNT",
+                "type": "number"
+            },
+            {
+                "name": "CATEGID",
+                "type": "number"
+            },
+            {
+                "name": "NEXTOCCURRENCEDATE",
+                "type": "text"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    },
+    {
+        "name": "BUDGETSPLITTRANSACTIONS_V1",
+        "type": "base",
+        "schema": [
+            {
+                "name": "SPLITTRANSID",
+                "type": "number"
+            },
+            {
+                "name": "TRANSID",
+                "type": "number"
+            },
+            {
+                "name": "CATEGID",
+                "type": "number"
+            },
+            {
+                "name": "SPLITTRANSAMOUNT",
+                "type": "number"
+            }
+        ],
+        "listRule": "@request.auth.id != ''",
+        "viewRule": "@request.auth.id != ''",
+        "createRule": "@request.auth.id != ''",
+        "updateRule": "@request.auth.id != ''",
+        "deleteRule": "@request.auth.id != ''"
+    }
+]
