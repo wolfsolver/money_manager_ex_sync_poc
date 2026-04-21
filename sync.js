@@ -64,7 +64,7 @@ function initDB(db) {
         SET pb_id = 'systemcat' || printf('%06d', CATEGID),
             pb_is_dirty = 1,
             pb_updated_at = STRFTIME('%Y-%m-%dT%H:%M:%SZ', 'NOW')
-        WHERE pb_id IS NULL OR pb_id = ''
+        WHERE ( pb_id IS NULL OR pb_id = '' ) AND CATEGID < 100
     `).run();
     if (seedResult.changes > 0) {
         console.log(`[DB Init] Assigned Deterministic IDs to ${seedResult.changes} system/seed records.`);
