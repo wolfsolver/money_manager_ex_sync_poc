@@ -3,6 +3,10 @@
 ## Overview
 This Proof of Concept (POC) demonstrates a non-intrusive, "Offline-First" synchronization system for Money Manager Ex (MMEX). The goal is to enable seamless multi-device sync (Windows <-> Cloud <-> Android) without requiring any changes to the existing MMEX C++ desktop codebase.
 
+### Additional file
+- [README_POCKETBASE.md](README_POCKETBASE.md): Pocketbase setup 
+- [task_list.md](task_list.md): task list for the POC
+
 ## Key Concepts
 
 ### 1. The "Sidecar" Approach
