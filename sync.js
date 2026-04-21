@@ -18,13 +18,13 @@ const args = process.argv.slice(2).reduce((acc, arg) => {
 // You can override these using environment variables if desired.
 const PB_USER = args.user || process.env.PB_USER || 'your@email.com';
 const PB_PASS = args.pass || process.env.PB_PASS || 'password';
-const DB_PATH = args.db   || process.env.DB_PATH || './sample_db.mmb';
-const PB_URL  = args.url  || process.env.PB_URL || 'http://127.0.0.1:8090'; // PocketBase instance URL
+const DB_PATH = args.db || process.env.DB_PATH || './sample_db.mmb';
+const PB_URL = args.url || process.env.PB_URL || 'http://127.0.0.1:8090'; // PocketBase instance URL
 
 const PB_COLLECTION = 'category_v1';             // Name of the PocketBase collection
 console.log("Argomenti ricevuti:", process.argv);
 console.log("Argomenti ricevuti: USER", PB_USER);
-console.log("Argomenti ricevuti: DB"  , DB_PATH);
+console.log("Argomenti ricevuti: DB", DB_PATH);
 
 
 /**
@@ -181,18 +181,31 @@ async function syncPull(db, pb) {
     // 1. get last update. in prod use a stored variable in shared preferences 
     const lastUpdateRecord = db.prepare(`
         SELECT MAX(pb_updated_at) as last_sync 
-        FROM CATEGORY_V1 
+        FROM CATEGORY_V1
         WHERE pb_updated_at IS NOT NULL
     `).get();
-    const filterDate = lastUpdateRecord?.last_sync || "1970-01-01 00:00:00";
-	console.log("retrive from:", filterDate);
-	
+    // use 2 second sync windows
+    let filterDate = "1970-01-01 00:00:00";
+
+    if (lastUpdateRecord && lastUpdateRecord.last_sync) {
+        // Trasforma in oggetto Date
+        const date = new Date(lastUpdateRecord.last_sync);
+
+        // Sottrai 2 secondi (2000 millisecondi)
+        date.setSeconds(date.getSeconds() - 2);
+
+        // Converti nel formato UTC richiesto da PocketBase (YYYY-MM-DD HH:MM:SS)
+        // Usiamo .replace per pulire il formato .toISOString()
+        filterDate = date.toISOString().replace('T', ' ').split('.')[0];
+    }
+    console.log("retrive from:", filterDate);
+
     // We need to retrive record since last update. for POC we fetch record starting from max pb_update_at
     let records = [];
     try {
         records = await pb.collection(PB_COLLECTION).getFullList({
             sort: '-updated', // get newest records first
-			filter: `updated >= "${filterDate}"`,
+            filter: `updated >= "${filterDate}"`,
         });
     } catch (error) {
         console.error("  -> [ERROR] Failed to fetch from PocketBase:", error.message);

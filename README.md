@@ -70,3 +70,8 @@ Alternatively, you can set environment variables before running the script:
 ## Conclusion
 This architecture proves that MMEX can be modernized with cloud capabilities while remaining a stable, offline-first desktop software. It respects the existing codebase and provides a modular path forward for the community.
 
+## Internal Note
+- table_v1.sql is the original schema
+- sample_db1.mmb is a sample database
+- samble_db2.mmb is a sample database used to test distribution
+- lastUpdateRecord need to be verified, we use 2 secodns windows for sync

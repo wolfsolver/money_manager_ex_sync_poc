@@ -3,3 +3,5 @@ node_modules/
 *.db
 .env
 .DS_Store
+mytest1.bat
+mytest2.bat
