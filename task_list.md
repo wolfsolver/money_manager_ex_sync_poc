@@ -1,0 +1,4 @@
+- [x] Add a mechanism to store compatible dB user version and prevent sync is is different
+- [ ] Complete table sync
+- [ ] Add switch from command line to execute a single step (init, push, pull)
+- [ ] Rename sync.js into sync_sample.js. (three model: sync_sample only category, sync_core main transacion table, sync_full all table
