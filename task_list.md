@@ -28,3 +28,9 @@
 
 - [ ] **Conflict Resolution (Simplified Policy)**
   - Implement a "Last Write Wins" logic to handle simultaneous modifications across different devices simply and effectively.
+
+- [ ] **Real-time Service Mode (`--watch`)**
+  - [ ] **Local Watcher**: Implement `chokidar` (or native `fs.watch`) to monitor the `.mmb` file. Trigger a `syncPush` immediately when MMEX saves changes to the database.
+  - [ ] **Remote Watcher (PocketBase Realtime)**: Use the `pb.collection(table).subscribe('*', ...)` feature to listen for remote changes. This replaces periodic pulling with instantaneous updates.
+  - [ ] **Concurrency Handling**: Implement a "debounce" mechanism to prevent multiple syncs from firing simultaneously if the file is saved multiple times in a few seconds.
+  - [ ] **SQLite Busy Management**: Add retry logic to handle `SQLITE_BUSY` errors, ensuring the script waits if MMEX has a temporary lock on the database file.
