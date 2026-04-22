@@ -1,0 +1,1 @@
+node .\verify.js --db1=sample_db1.mmb --db2=sample_db2.mmb

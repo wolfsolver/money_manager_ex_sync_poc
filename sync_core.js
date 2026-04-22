@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const PocketBase = require('pocketbase/cjs');
+const fs = require('fs'); // Necessario per leggere il file SQL
 
 // ==========================================
 // CONFIGURATION & MAPPING
@@ -12,7 +13,8 @@ const args = process.argv.slice(2).reduce((acc, arg) => {
 }, {});
 
 // Lista dei parametri e comandi validi
-const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush'];
+const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush', 'create'];
+
 // 1. Controllo parametri sconosciuti
 const unknownArgs = Object.keys(args).filter(key => !VALID_ARGS.includes(key));
 if (unknownArgs.length > 0) {
@@ -43,6 +45,8 @@ Commands (can be combined):
   --help            Show this help message
   --forcepush       Push all records from local DB to PocketBase (not only dirty records)
                     Include --push
+  --create          Create empty databse and all tables
+                    Include --init
 
 Notes:
   - If no command (--init, --push, --pull) is provided, the script runs all three by default.
@@ -53,7 +57,8 @@ Notes:
 
 const RUN_FORCEPUSH = args.forcepush === true;
 const RUN_CLEAR = args.clearServer === true;
-let RUN_INIT = args.init === true;
+const RUN_CREATE = args.create === true;
+let RUN_INIT = args.init === true || args.create === true;
 let RUN_PUSH = args.push === true || RUN_FORCEPUSH;
 let RUN_PULL = args.pull === true;
 if (!RUN_INIT && !RUN_PUSH && !RUN_PULL && !RUN_CLEAR) { // no param.. all true
@@ -227,14 +232,23 @@ async function syncPush(db, pb, tableName) {
 async function syncPull(db, pb, tableName) {
 
     const config = SYNC_CONFIG[tableName];
-    //const lastSync = db.prepare(`SELECT MAX(pb_updated_at) as ts FROM ${tableName}`).get().ts || '1970-01-01';
-    const lastSync = '1970-01-01T00:00:00.000Z';
+
+    // Recuperiamo l'ultimo timestamp e sottraiamo 2 secondi per evitare di perdere transazioni 
+    // avvenute nello stesso secondo dell'ultimo sync
+    const lastSyncRow = db.prepare(`
+        SELECT datetime(MAX(pb_updated_at), '-2 seconds') as ts 
+        FROM ${tableName} 
+        WHERE pb_updated_at IS NOT NULL
+    `).get();
+
+    const lastSync = lastSyncRow && lastSyncRow.ts ? lastSyncRow.ts : '1970-01-01T00:00:00Z';
 
     let last_rmt = null;
 
     try {
         const remoteRecords = await pb.collection(tableName).getFullList({
-            //            filter: `updated > "${lastSync.replace('Z', '').replace('T', ' ')}"`
+            filter: `updated > "${lastSync}"`,
+            sort: 'updated' // Opzionale: utile per mantenere l'ordine cronologico
         });
 
         if (remoteRecords.length === 0) return;
@@ -247,21 +261,21 @@ async function syncPull(db, pb, tableName) {
             if (local) {
                 // use universal id from pb to updatel
                 const updateStmt = db.prepare(`
-                    UPDATE ${tableName} SET ${config.fields.map(f => `${f} = ?`).join(', ')}, 
+                    UPDATE ${tableName} SET ${config.pk} = ?, ${config.fields.map(f => `${f} = ?`).join(', ')}, 
                     pb_updated_at = ?, pb_is_dirty = 2 WHERE pb_id = ?
                 `);
-                const values = config.fields.map(f => rmt[f]);
-                updateStmt.run(...values, rmt.updated, rmt.id);
+                const values = [rmt[config.pk], ...config.fields.map(f => rmt[f]), rmt.updated, rmt.id];
+                updateStmt.run(...values);
             } else {
                 // New ID remotely -> insert locally
                 //                const local = db.prepare(`SELECT ${config.pk} FROM ${tableName} WHERE ${config.pk} = ?`).get(rmt[config.pk]);
 
                 // Costruiamo dinamicamente i nomi delle colonne e i segnaposti (?)
-                const columns = [...config.fields, 'pb_id', 'pb_updated_at', 'pb_is_dirty'];
+                const columns = [config.pk, ...config.fields, 'pb_id', 'pb_updated_at', 'pb_is_dirty'];
                 const placeholders = columns.map(() => '?').join(', ');
 
                 // Prepariamo i valori (mettiamo pb_is_dirty = 2)
-                const values = [...config.fields.map(f => rmt[f]), rmt.id, rmt.updated, 2];
+                const values = [rmt[config.pk], ...config.fields.map(f => rmt[f]), rmt.id, rmt.updated, 2];
 
                 const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
                 db.prepare(insertSql).run(...values);
@@ -274,14 +288,46 @@ async function syncPull(db, pb, tableName) {
     }
 }
 
+
+/**
+ * Crea un nuovo database da zero usando lo schema MMEX originale
+ */
+function createEmptyDatabase(dbPath) {
+    console.log(`[Create] Creating new database at ${dbPath}...`);
+
+    // Rimuove il file se esiste già per una creazione pulita
+    if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+    }
+
+    const db = new Database(dbPath);
+
+    try {
+        // 1. Legge ed esegue il file table_v1.sql
+        const sqlSchema = fs.readFileSync('tables_v1_for_sync.sql', 'utf8');
+        db.exec(sqlSchema);
+        console.log("[Create] SQL Schema applied successfully.");
+
+        // 2. Imposta il PRAGMA user_version a 21
+        db.pragma('user_version = 21');
+        console.log("[Create] PRAGMA user_version set to 21.");
+
+        return db;
+    } catch (err) {
+        console.error("❌ [Create] Error creating database:", err.message);
+        db.close();
+        process.exit(1);
+    }
+}
+
+
 // ==========================================
 // MAIN EXECUTION
 // ==========================================
 async function main() {
     const pb = new PocketBase(PB_URL);
-    const db = DB_PATH == null ? null : new Database(DB_PATH);
-
-    if (db == null) {
+    let db = null;
+    if (DB_PATH == null) {
         // olny perform RUN_CLEAR is set
         RUN_INIT = false;
         RUN_PULL = false;
@@ -289,6 +335,17 @@ async function main() {
     }
 
     try {
+        // Se RUN_CREATE è attivo, inizializza il DB prima di ogni altra operazione
+        if (RUN_CREATE) {
+            if (!DB_PATH) {
+                console.error("❌ Error: --db=<path> is required when using --create");
+                process.exit(1);
+            }
+            db = createEmptyDatabase(DB_PATH);
+        } else if (DB_PATH != null) {
+            db = new Database(DB_PATH);
+        }
+
         await pb.admins.authWithPassword(PB_USER, PB_PASS);
         if (db != null && (!await check_userVersion(db, pb))) return;
 

@@ -6,6 +6,6 @@
 - [ ] Caso di test non funzionante:
   - .\clean_test.bat
   - .\mytest_core1.bat
-  - .\mytest_core2.bat --init
-  - .\mytest_core1.bat --push
+  - .\mytest_core2.bat --create
+  - .\mytest_core2.bat --push
     **Error** duplicate record on server...   

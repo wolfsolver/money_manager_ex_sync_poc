@@ -22,6 +22,9 @@ This Proof of Concept (POC) demonstrates a non-intrusive, "Offline-First" synchr
 - [README_POCKETBASE.md](README_POCKETBASE.md): Pocketbase setup 
 - [task_list.md](task_list.md): task list for the POC
 
+## Video
+[Magic in action! 🤩](https://drive.google.com/file/d/1QpVG0JLxxkSFdbdGHVSdwo84gRmWErLv/view?usp=sharing)
+
 ## Key Concepts
 
 ### 1. The "Sidecar" Approach
@@ -86,9 +89,54 @@ Alternatively, you can set environment variables before running the script:
 - `sync.js`: The main logic for the Sidecar engine.
 - `README.md`: Project documentation.
 
+
+## 🧪 Quick Start: Testing the Sync (Step-by-Step)
+
+To see the "magic" in action and verify how the Sidecar Engine synchronizes two independent local databases, follow this sequence:
+
+### 1. Prepare your Source Database
+Open **Money Manager Ex** and create a database (e.g., `sample_db1.mmb`). Add some initial data like accounts, categories, and a few transactions. This will be your "Primary" node.
+
+### 2. Create an Empty Peer Database
+Use the Sync Tool to create a second, empty database that follows the MMEX schema:
+```bash
+node sync_core.js --create --db="./sample_db2.mmb"
+```
+*This command applies the `table_v1.sql` schema and sets the required `user_version`.*
+
+### 3. Upload Data from DB1
+Upload the data from your first database to the PocketBase cloud:
+```bash
+node sync_core.js --db="./sample_db1.mmb" --push
+```
+*The engine will initialize the technical columns and push all records to the server.*
+
+### 4. Download Data to DB2
+Now, populate your empty second database from the cloud:
+```bash
+node sync_core.js --db="./sample_db2.mmb" --pull
+```
+*At this point, if you open `sample_db2.mmb` with MMEX, you will see exactly the same data as DB1.*
+
+### 5. Verify Bi-directional Sync
+Now let's test the round-trip:
+1.  **Modify DB2**: Open `sample_db2.mmb` in MMEX and add a new transaction.
+2.  **Sync DB2 (Push)**: 
+    ```bash
+    node sync_core.js --db="./sample_db2.mmb" --push
+    ```
+3.  **Sync DB1 (Pull)**:
+    ```bash
+    node sync_core.js --db="./sample_db1.mmb" --pull
+    ```
+4.  **Final Result**: Open `sample_db1.mmb` in MMEX. You will find the transaction you created in the other database!
+
+### 6. Programmatic Verification
+You can use the provided utility to verify that the two databases are perfectly identical:
+```bash
+node verify.js --db1="./sample_db1.mmb" --db2="./sample_db2.mmb"
+```
+
+
 ## Conclusion
 This architecture proves that MMEX can be modernized with cloud capabilities while remaining a stable, offline-first desktop software. It respects the existing codebase and provides a modular path forward for the community.
-
-## Internal Note
-- sync category work
-- sync massive has issue.... 
