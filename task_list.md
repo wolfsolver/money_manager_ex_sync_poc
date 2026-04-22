@@ -34,3 +34,7 @@
   - [ ] **Remote Watcher (PocketBase Realtime)**: Use the `pb.collection(table).subscribe('*', ...)` feature to listen for remote changes. This replaces periodic pulling with instantaneous updates.
   - [ ] **Concurrency Handling**: Implement a "debounce" mechanism to prevent multiple syncs from firing simultaneously if the file is saved multiple times in a few seconds.
   - [ ] **SQLite Busy Management**: Add retry logic to handle `SQLITE_BUSY` errors, ensuring the script waits if MMEX has a temporary lock on the database file.
+- [ ] **Android Integration Strategy**
+  - [ ] **Mobile Client Research**: Evaluate the current MMEX Android codebase to identify the best injection point for the PocketBase sync logic.
+  - [ ] **Kotlin/Java Implementation**: Port the logic from `sync_core.js` (Deterministic IDs, dirty flags, and triggers) to the Android SQLite implementation.
+  - [ ] **Offline-First for Mobile**: Ensure the Android app handles intermittent connectivity by queueing local changes and syncing them once the device is back online, mirroring the Sidecar's behavior.
