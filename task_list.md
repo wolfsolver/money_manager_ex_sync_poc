@@ -38,3 +38,5 @@
   - [ ] **Mobile Client Research**: Evaluate the current MMEX Android codebase to identify the best injection point for the PocketBase sync logic.
   - [ ] **Kotlin/Java Implementation**: Port the logic from `sync_core.js` (Deterministic IDs, dirty flags, and triggers) to the Android SQLite implementation.
   - [ ] **Offline-First for Mobile**: Ensure the Android app handles intermittent connectivity by queueing local changes and syncing them once the device is back online, mirroring the Sidecar's behavior.
+
+- [ ] check if is possible to update directly on pocket base the user field while a record is created/updated using Auth 
