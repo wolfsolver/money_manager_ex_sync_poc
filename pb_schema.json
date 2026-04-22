@@ -79,12 +79,12 @@
         "type": "number"
       },
       {
-        "hidden": false,
         "id": "autodate2990389176",
         "name": "created",
         "onCreate": true,
         "onUpdate": false,
-        "presentable": false,
+        "hidden": false,
+        "presentable": true,
         "system": false,
         "type": "autodate"
       },

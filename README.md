@@ -1,5 +1,9 @@
 # MMEX Sync Engine POC (Sidecar Architecture)
 
+> [!WARNING]
+> This is a POC, not production-ready code.
+> still not work perfectly
+
 ## Overview
 This Proof of Concept (POC) demonstrates a non-intrusive, "Offline-First" synchronization system for Money Manager Ex (MMEX). The goal is to enable seamless multi-device sync (Windows <-> Cloud <-> Android) without requiring any changes to the existing MMEX C++ desktop codebase.
 
@@ -86,7 +90,5 @@ Alternatively, you can set environment variables before running the script:
 This architecture proves that MMEX can be modernized with cloud capabilities while remaining a stable, offline-first desktop software. It respects the existing codebase and provides a modular path forward for the community.
 
 ## Internal Note
-- table_v1.sql is the original schema
-- sample_db1.mmb is a sample database
-- samble_db2.mmb is a sample database used to test distribution
-- lastUpdateRecord need to be verified, we use 2 secodns windows for sync
+- sync category work
+- sync massive has issue.... 

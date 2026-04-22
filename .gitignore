@@ -1,7 +1,5 @@
 node_modules/
-*.mmb
-*.db
 .env
 .DS_Store
-mytest1.bat
-mytest2.bat
+set_user_passwd.bat
+*.sqbpro

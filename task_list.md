@@ -1,4 +1,11 @@
 - [x] Add a mechanism to store compatible dB user version and prevent sync is is different
 - [ ] Complete table sync
-- [ ] Add switch from command line to execute a single step (init, push, pull)
+- [X] Add switch from command line to execute a single step (init, push, pull)
 - [ ] Rename sync.js into sync_sample.js. (three model: sync_sample only category, sync_core main transacion table, sync_full all table
+- [ ] add new switch "--clearServer" to clear all pocketbase data in application table (not in system table)
+- [ ] Caso di test non funzionante:
+  - .\clean_test.bat
+  - .\mytest_core1.bat
+  - .\mytest_core2.bat --init
+  - .\mytest_core1.bat --push
+    **Error** duplicate record on server...   
