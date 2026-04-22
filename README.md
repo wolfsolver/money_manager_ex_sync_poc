@@ -50,8 +50,8 @@ The POC adds technical columns to the `CATEGORY_V1` table:
 
 1. **Clone the repository**:
    ```bash
-   git clone [https://github.com/your-username/mmex-sync-poc.git](https://github.com/your-username/mmex-sync-poc.git)
-   cd mmex-sync-poc
+   git clone https://github.com/wolfsolver/money_manager_ex_sync_poc.git
+   cd money_manager_ex_sync_poc
    ```
 
 2. **Install dependencies**:
@@ -66,7 +66,7 @@ You can run the sync engine by providing configuration via command-line argument
 
 ### Using Command Line Arguments (Recommended)
 ```bash
-node sync.js --db="./my_database.mmb" --user="admin@example.com" --pass="YourPassword" --url="[http://127.0.0.1:8090](http://127.0.0.1:8090)"
+node sync.js --db="./my_database.mmb" --user="admin@example.com" --pass="YourPassword" --url="http://127.0.0.1:8090"
 ```
 
 ### Using Environment Variables
