@@ -144,6 +144,15 @@ async function clearRemoteServer(pb) {
 function initDB(db) {
     console.log("[DB Init] Initializing tables and triggers...");
 
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS pb_DELETED_RECORDS_LOG (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name TEXT NOT NULL,
+            pb_id TEXT NOT NULL,
+            deleted_at TEXT DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%SZ', 'NOW'))
+        );
+    `);
+
     for (const [tableName, config] of Object.entries(SYNC_CONFIG)) {
         const columnsInfo = db.pragma(`table_info(${tableName})`);
         const colNames = columnsInfo.map(c => c.name);
@@ -152,7 +161,6 @@ function initDB(db) {
         if (!colNames.includes('pb_id')) db.exec(`ALTER TABLE ${tableName} ADD COLUMN pb_id TEXT;`);
         if (!colNames.includes('pb_updated_at')) db.exec(`ALTER TABLE ${tableName} ADD COLUMN pb_updated_at TEXT;`);
         if (!colNames.includes('pb_is_dirty')) db.exec(`ALTER TABLE ${tableName} ADD COLUMN pb_is_dirty INTEGER DEFAULT 0;`);
-        if (!colNames.includes('pb_is_deleted')) db.exec(`ALTER TABLE ${tableName} ADD COLUMN pb_is_deleted INTEGER DEFAULT 0;`);
 
         // 2. Deterministic IDs (per record esistenti < 100 o tabelle config)
         // id need to be 15 char. use: systemconstxxxx
@@ -184,6 +192,14 @@ function initDB(db) {
                 WHERE ${config.pk} = NEW.${config.pk};
             END;
         `);
+
+        db.exec(`
+            CREATE TRIGGER IF NOT EXISTS TRG_${tableName}_DELETE AFTER DELETE ON ${tableName}
+            FOR EACH ROW WHEN OLD.pb_id IS NOT NULL AND OLD.pb_id != ''
+            BEGIN
+                INSERT INTO pb_DELETED_RECORDS_LOG (table_name, pb_id) VALUES ('${tableName}', OLD.pb_id);
+            END;
+        `);
     }
 }
 
@@ -192,6 +208,25 @@ function initDB(db) {
 // ==========================================
 async function syncPush(db, pb, tableName) {
     const config = SYNC_CONFIG[tableName];
+
+    // Process Deletions First
+    const deletedRecords = db.prepare(`SELECT * FROM pb_DELETED_RECORDS_LOG WHERE table_name = ?`).all(tableName);
+    if (deletedRecords.length > 0) {
+        console.log(`[Push] ${tableName}: Syncing ${deletedRecords.length} deletions...`);
+        for (const delRecord of deletedRecords) {
+            try {
+                // we dont delete from pb directly. We use soft delete on pb
+                const payload = { is_deleted: 1 };
+                const remoteRecord = await pb.collection(tableName).update(delRecord.pb_id, payload);
+                if (remoteRecord.is_deleted === 1) {
+                    db.prepare(`DELETE FROM pb_DELETED_RECORDS_LOG WHERE id = ?`).run(delRecord.id);
+                }
+            } catch (e) {
+                console.error(`  Error pushing deletion for ${tableName} ID ${delRecord.pb_id}:`, e.message);
+            }
+        }
+    }
+
     const records = RUN_FORCEPUSH ?
         db.prepare(`SELECT * FROM ${tableName}`).all() :
         db.prepare(`SELECT * FROM ${tableName} WHERE pb_is_dirty = 1 OR pb_id = '' OR pb_id IS NULL`).all();
@@ -204,7 +239,6 @@ async function syncPush(db, pb, tableName) {
         delete payload.pb_is_dirty; // Non serve al cloud
         payload.id = payload.pb_id; delete payload.pb_id;
         payload.updated_at = payload.pb_updated_at; delete payload.pb_updated_at;
-        payload.is_deleted = payload.pb_is_deleted; delete payload.pb_is_deleted;
 
         Object.keys(payload).forEach(key => {
             if (payload[key] == null) {
@@ -256,6 +290,14 @@ async function syncPull(db, pb, tableName) {
 
         for (const rmt of remoteRecords) {
             last_rmt = rmt;
+
+            // we need to check if remote record is deleted on server
+            if (rmt.is_deleted === 1) {
+                // ToDo: need to be checked if delete cause a loop . this statemetn will probbiliy trigger the update trigger
+                db.prepare(`DELETE FROM ${tableName} WHERE pb_id = ?`).run(rmt.id);
+                continue;
+            }
+
             const local = db.prepare(`SELECT ${config.pk} FROM ${tableName} WHERE pb_id = ?`).get(rmt.id);
             //console.log("record", rmt.id, "is present? [", local, "]:", `SELECT ${config.pk} FROM ${tableName} WHERE pb_id = "${rmt.id}"`);
             if (local) {

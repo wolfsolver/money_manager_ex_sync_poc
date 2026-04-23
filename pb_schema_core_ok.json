@@ -136,6 +136,19 @@
         "type": "date"
       },
       {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
         "hidden": false,
         "id": "pb_created",
         "name": "created",
@@ -282,6 +295,19 @@
         "type": "text"
       },
       {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
         "hidden": false,
         "id": "pb_created",
         "name": "created",
@@ -380,6 +406,19 @@
         "max": null,
         "min": null,
         "name": "PARENTID",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
         "onlyInt": false,
         "presentable": false,
         "required": false,
@@ -576,6 +615,19 @@
         "type": "text"
       },
       {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
         "hidden": false,
         "id": "pb_created",
         "name": "created",
@@ -670,6 +722,19 @@
         "type": "text"
       },
       {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
         "hidden": false,
         "id": "pb_created",
         "name": "created",
@@ -691,7 +756,8 @@
       }
     ],
     "indexes": [
-      "CREATE INDEX `idx_2wimpewtoa` ON `INFOTABLE_V1` (`INFOID`)"
+      "CREATE INDEX `idx_2wimpewtoa` ON `INFOTABLE_V1` (`INFOID`)",
+      "CREATE UNIQUE INDEX `idx_wkize3frg1` ON `INFOTABLE_V1` (`INFONAME`)"
     ],
     "system": false
   },
@@ -768,6 +834,19 @@
         "max": null,
         "min": null,
         "name": "CATEGID",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
         "onlyInt": false,
         "presentable": false,
         "required": false,
@@ -871,6 +950,19 @@
         "max": null,
         "min": null,
         "name": "SPLITTRANSAMOUNT",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "number4245145851",
+        "max": null,
+        "min": null,
+        "name": "is_deleted",
         "onlyInt": false,
         "presentable": false,
         "required": false,
