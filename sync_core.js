@@ -2,6 +2,8 @@ import Database from 'better-sqlite3';
 import PocketBase from 'pocketbase';
 import fs from 'fs';
 import chokidar from 'chokidar';
+import { EventSource } from 'eventsource';
+global.EventSource = EventSource;
 import { SYNC_CONFIG, SYNC_ORDER } from './config/table_config.js';
 
 // ==========================================
@@ -369,7 +371,9 @@ async function runSyncCycle() {
     }
 
     try {
-        await pb.admins.authWithPassword(PB_USER, PB_PASS);
+        await pb.collection('_superusers').authWithPassword(PB_USER, PB_PASS);
+
+        if (RUN_CLEAR) await clearRemoteServer(pb);
 
         // Se RUN_CREATE è attivo, inizializza il DB prima di ogni altra operazione
         if (RUN_CREATE) {
@@ -382,12 +386,13 @@ async function runSyncCycle() {
             db = new Database(DB_PATH, { timeout: 5000 });
         }
 
-        db.prepare('BEGIN IMMEDIATE').run();
-        console.log("[Lock] Local database locked for sync.");
+        if (db) {
+            db.prepare('BEGIN IMMEDIATE').run();
+            console.log("[Lock] Local database locked for sync.");
+        }
 
 
         if (db != null && (!await check_userVersion(db, pb))) return;
-        if (RUN_CLEAR) await clearRemoteServer(pb);
         if (RUN_INIT) initDB(db);
 
         let globalLastSync = '1970-01-01 00:00:00.000Z';
@@ -418,8 +423,10 @@ async function runSyncCycle() {
         }
 
         // release lock
-        db.prepare('COMMIT').run();
-        console.log("[Lock] Local database unlocked (Changes committed).");
+        if (db) {
+            db.prepare('COMMIT').run();
+            console.log("[Lock] Local database unlocked (Changes committed).");
+        }
 
 
         console.log("\n✅ Global Sync Completed.");
@@ -434,11 +441,8 @@ async function runSyncCycle() {
     }
 }
 
-
 async function startWatcher() {
     console.log(`[Watcher] Monitoring for changes in: ${DB_PATH}`);
-
-    let isMyChange = 0;
 
     const watcher = chokidar.watch(DB_PATH, {
         persistent: true,
@@ -446,29 +450,39 @@ async function startWatcher() {
         interval: 1000
     });
 
-    watcher.on('change', async () => {
-        console.log("[Watcher] File change detected. isMyChange:", isMyChange);
-        if (isMyChange == 1) return;
-        if (isMyChange == 2) {
-            isMyChange = 0;
-            return;
+    const triggerSync = async (source) => {
+        console.log(`\n[Watcher] ${source === 'local' ? 'File' : 'Remote'} change detected. Starting sync...`);
+
+        try {
+            // Eseguiamo una sessione completa di Push/Pull
+            await runSyncCycle();
+        } catch (err) {
+            console.error("[Watcher] Sync failed:", err.message);
         }
-        isMyChange = 1;
 
-        console.log("\n[Watcher] File change detected. Starting sync...");
-
-        do {
-            try {
-                // Eseguiamo una sessione completa di Push/Pull
-                await runSyncCycle();
-            } catch (err) {
-                console.error("[Watcher] Sync failed:", err.message);
-            }
-        } while (false);
-
-        isMyChange = 2;
         console.log("[Watcher] Sync cycle finished. Waiting for next change...");
+    };
+
+    watcher.on('change', async () => {
+        console.log("[Watcher] File change detected");
+        await triggerSync('local');
     });
+
+    try {
+        const pb = new PocketBase(PB_URL);
+        await pb.collection('_superusers').authWithPassword(PB_USER, PB_PASS);
+        console.log("[Watcher] Connected to PocketBase for realtime updates.");
+
+        for (const table of SYNC_ORDER) {
+            pb.collection(table).subscribe('*', async (e) => {
+                console.log(`[Watcher] Remote change on ${table} (${e.action}).`);
+                await triggerSync('remote');
+            });
+            console.log(`[Watcher] Subscribed on table: ${table}`);
+        }
+    } catch (err) {
+        console.error("[Watcher] Failed to setup remote watcher:", err.message);
+    }
 }
 
 async function main() {
@@ -488,7 +502,7 @@ async function main() {
         }
         db = createEmptyDatabase(DB_PATH);
         db.close();
-        RUN_CREATE = false;
+        process.exit(0);
     }
 
     await runSyncCycle();

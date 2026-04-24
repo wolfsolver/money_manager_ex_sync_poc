@@ -13,6 +13,7 @@
   "dependencies": {
     "better-sqlite3": "^12.9.0",
     "chokidar": "^5.0.0",
+    "eventsource": "^4.1.0",
     "pocketbase": "^0.26.8"
   }
 }

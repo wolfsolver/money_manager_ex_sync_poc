@@ -36,8 +36,8 @@
 
 - [ ] **Real-time Service Mode (`--watch`)**
   - [X] **Lock during sync**: Lock db while push and pulling to prevent db corruption.
-  - [ ] **Local Watcher**: Implement `chokidar` (or native `fs.watch`) to monitor the `.mmb` file. Trigger a `syncPush` immediately when MMEX saves changes to the database. if DB is `SQLITE_BUSY`, wait and retry.
-  - [ ] **Remote Watcher (PocketBase Realtime)**: Use the `pb.collection(table).subscribe('*', ...)` feature to listen for remote changes. This replaces periodic pulling with instantaneous updates.
+  - [X] **Local Watcher**: Implement `chokidar` (or native `fs.watch`) to monitor the `.mmb` file. Trigger a `syncPush` immediately when MMEX saves changes to the database. if DB is `SQLITE_BUSY`, wait and retry.
+  - [X] **Remote Watcher (PocketBase Realtime)**: Use the `pb.collection(table).subscribe('*', ...)` feature to listen for remote changes. This replaces periodic pulling with instantaneous updates.
   - [ ] **Concurrency Handling**: Implement a "debounce" mechanism to prevent multiple syncs from firing simultaneously if the file is saved multiple times in a few seconds.
   
 - [ ] **Android Integration Strategy**

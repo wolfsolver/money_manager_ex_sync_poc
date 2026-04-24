@@ -23,7 +23,12 @@ This Proof of Concept (POC) demonstrates a non-intrusive, "Offline-First" synchr
 - [task_list.md](task_list.md): task list for the POC
 
 ## Video
+Sample video with manual sync
 [Magic in action! 🤩](https://drive.google.com/file/d/1QpVG0JLxxkSFdbdGHVSdwo84gRmWErLv/view?usp=sharing)
+
+Sample video with real time sync
+[Magin in action with real time🤩](https://1drv.ms/v/c/6958bccc4c47c1d3/IQAfDCUauF7dQo2GL1r47SziAfLlgfXdpo8-8-ustZM9CMA?e=5mPJBo)
+
 
 ## Key Concepts
 
