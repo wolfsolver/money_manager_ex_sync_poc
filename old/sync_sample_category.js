@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const PocketBase = require('pocketbase/cjs');
+const fs = require('fs');
 
 
 // Funzione per estrarre i parametri tipo --chiave=valore
@@ -175,29 +176,9 @@ async function syncPush(db, pb) {
  * Pull Phase: Cloud -> Local
  * Fetches remote changes from PB and merges them into SQLite using Marker 2 (bypassing triggers).
  */
-async function syncPull(db, pb) {
+async function syncPull(db, pb, filterDate) {
     console.log("\n[Pull Phase] Starting...");
 
-    // 1. get last update. in prod use a stored variable in shared preferences 
-    const lastUpdateRecord = db.prepare(`
-        SELECT MAX(pb_updated_at) as last_sync 
-        FROM CATEGORY_V1
-        WHERE pb_updated_at IS NOT NULL
-    `).get();
-    // use 2 second sync windows
-    let filterDate = "1970-01-01 00:00:00";
-
-    if (lastUpdateRecord && lastUpdateRecord.last_sync) {
-        // Trasforma in oggetto Date
-        const date = new Date(lastUpdateRecord.last_sync);
-
-        // Sottrai 2 secondi (2000 millisecondi)
-        date.setSeconds(date.getSeconds() - 2);
-
-        // Converti nel formato UTC richiesto da PocketBase (YYYY-MM-DD HH:MM:SS)
-        // Usiamo .replace per pulire il formato .toISOString()
-        filterDate = date.toISOString().replace('T', ' ').split('.')[0];
-    }
     console.log("retrive from:", filterDate);
 
     // We need to retrive record since last update. for POC we fetch record starting from max pb_update_at
@@ -301,6 +282,27 @@ async function main() {
         // await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
         console.log("[Auth] Success.");
 
+        let globalLastSync = '1970-01-01 00:00:00.000Z';
+        const syncDataDir = './sync_data';
+        const configFileName = args.config_file || '.lastsync';
+        const lastSyncFile = `${syncDataDir}/${configFileName}`;
+        
+        if (fs.existsSync(lastSyncFile)) {
+            let fileContent = fs.readFileSync(lastSyncFile, 'utf8').trim();
+            if (fileContent) {
+                // Sottraiamo 2 secondi per sicurezza
+                let dateObj = new Date(fileContent);
+                if (!isNaN(dateObj.getTime())) {
+                    dateObj.setSeconds(dateObj.getSeconds() - 2);
+                    globalLastSync = dateObj.toISOString().replace('T', ' ').substring(0, 19);
+                } else {
+                    globalLastSync = fileContent;
+                }
+            }
+        }
+        
+        let pullStartTime = new Date().toISOString().replace('T', ' ').substring(0, 19) + 'Z';
+
         // 1. Initialize schema & triggers
         initDB(db);
 
@@ -308,7 +310,13 @@ async function main() {
         await syncPush(db, pb);
 
         // 3. Perform pull of remote changes
-        await syncPull(db, pb);
+        await syncPull(db, pb, globalLastSync);
+        
+        if (!fs.existsSync(syncDataDir)) {
+            fs.mkdirSync(syncDataDir, { recursive: true });
+        }
+        fs.writeFileSync(lastSyncFile, pullStartTime, 'utf8');
+        console.log(`[Pull Phase] Saved new last sync time: ${pullStartTime}`);
 
         console.log("\n✅ Sync sequence completed successfully!");
     } catch (err) {

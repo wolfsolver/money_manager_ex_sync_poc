@@ -1,4 +1,7 @@
-const Database = require('better-sqlite3');
+import Database from 'better-sqlite3';
+import { SYNC_CONFIG, SYNC_ORDER } from './config/table_config.js';
+
+
 
 // ==========================================
 // CONFIGURATION & ARGUMENTS
@@ -12,35 +15,37 @@ const args = process.argv.slice(2).reduce((acc, arg) => {
 
 if (args.help || !args.db1 || !args.db2) {
     console.log(`
-Usage: node verify.js --db1=<path_to_db1> --db2=<path_to_db2>
+Usage: node verify.js --db1=<path_to_db1> --db2=<path_to_db2> [--verbose]
 
 Description:
   Compares two MMEX databases to find differences in synchronized tables.
   Checks for:
   - Missing records (based on pb_id)
   - Differences in field values
+  Options:
+    --verbose  - Show all tables, even if they match
+    --help     - Show this help message
     `);
     process.exit(0);
 }
 
-// Configurazione speculare a sync_core.js per sapere cosa confrontare
-const SYNC_CONFIG = {
-    'INFOTABLE_V1': { pk: 'INFOID', fields: ['INFONAME', 'INFOVALUE'] },
-    'CATEGORY_V1': { pk: 'CATEGID', fields: ['CATEGNAME', 'ACTIVE', 'PARENTID'] },
-    'PAYEE_V1': { pk: 'PAYEEID', fields: ['PAYEENAME', 'ACTIVE', 'CATEGID'] },
-    'ACCOUNTLIST_V1': { pk: 'ACCOUNTID', fields: ['ACCOUNTNAME', 'ACCOUNTTYPE', 'STATUS', 'FAVORITEACCT', 'INITIALDATE', 'INITIALBAL', 'CURRENCYID'] },
-    'CHECKINGACCOUNT_V1': { pk: 'TRANSID', fields: ['ACCOUNTID', 'TOACCOUNTID', 'PAYEEID', 'TRANSCODE', 'TRANSAMOUNT', 'STATUS', 'CATEGID', 'TRANSDATE', 'NOTES'] },
-    'BILLSDEPOSITS_V1': { pk: 'BDID', fields: ['ACCOUNTID', 'PAYEEID', 'TRANSCODE', 'TRANSAMOUNT', 'CATEGID', 'NEXTOCCURRENCEDATE'] }
-};
 
 function verify() {
-    const db1 = new Database(args.db1);
-    const db2 = new Database(args.db2);
+    if (args.verbose) console.log(`\nComparing DB1: ${args.db1} | DB2: ${args.db2}`);
 
-    console.log(`\n🔍 Comparing DB1: ${args.db1} | DB2: ${args.db2}\n`);
+    let db1, db2;
+    try {
+        db1 = new Database(args.db1, { fileMustExist: true });
+        db2 = new Database(args.db2, { fileMustExist: true });
+    } catch (error) {
+        console.error(`❌ Error opening databases: ${error.message}\n`);
+        process.exit(1);
+    }
+
+    let tableTotals = 0;
+    let tableFailures = 0;
 
     for (const [tableName, config] of Object.entries(SYNC_CONFIG)) {
-        console.log(`--- Table: ${tableName} ---`);
 
         // 1. Carichiamo tutti i record usando pb_id come chiave universale
         const records1 = db1.prepare(`SELECT * FROM ${tableName} WHERE pb_id IS NOT NULL`).all();
@@ -54,7 +59,7 @@ function verify() {
             const row2 = map2.get(row1.pb_id);
 
             if (!row2) {
-                console.warn(`  ❌ Missing in DB2: pb_id ${row1.pb_id} (${config.pk}: ${row1[config.pk]})`);
+                if (args.verbose) console.warn(`Table: ${tableName}: ❌ Missing in DB2: pb_id ${row1.pb_id} (${config.pk}: ${row1[config.pk]})`);
                 tableIssues++;
                 return;
             }
@@ -66,7 +71,7 @@ function verify() {
 
                 // Normalizzazione per confronto (es. date o null)
                 if (val1 !== val2) {
-                    console.warn(`  ⚠️  Difference in pb_id ${row1.pb_id}: Field [${field}] | DB1: '${val1}' vs DB2: '${val2}'`);
+                    if (args.verbose) console.warn(`Table: ${tableName}: ⚠️  Difference in pb_id ${row1.pb_id}: Field [${field}] | DB1: '${val1}' vs DB2: '${val2}'`);
                     tableIssues++;
                 }
             });
@@ -76,21 +81,32 @@ function verify() {
         const map1 = new Map(records1.map(r => [r.pb_id, r]));
         records2.forEach(row2 => {
             if (!map1.has(row2.pb_id)) {
-                console.warn(`  ❌ Extra in DB2: pb_id ${row2.pb_id} (${config.pk}: ${row2[config.pk]})`);
+                if (args.verbose) console.warn(`Table: ${tableName}: ❌ Extra in DB2: pb_id ${row2.pb_id} (${config.pk}: ${row2[config.pk]})`);
                 tableIssues++;
             }
         });
 
         if (tableIssues === 0) {
-            console.log(`  ✅ OK: All records match.`);
+            tableTotals++;
+            if (args.verbose) console.log(`Table: ${tableName}: OK: All records match.`);
         } else {
-            console.log(`  Summary: Found ${tableIssues} issues.`);
+            tableFailures++;
+            console.log(`Table: ${tableName}: Summary: Found ${tableIssues} issues.`);
         }
-        console.log("");
     }
 
     db1.close();
     db2.close();
+
+    console.log(`\nSummary: ${tableTotals} tables OK, ${tableFailures} tables with issues.`);
+
+    if (tableFailures === 0) {
+        console.log('✅ Databases are identical.');
+        process.exit(0);
+    } else {
+        console.log('❌ Databases have differences.');
+        process.exit(1);
+    }
 }
 
 verify();

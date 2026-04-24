@@ -1,6 +1,8 @@
-const Database = require('better-sqlite3');
-const PocketBase = require('pocketbase/cjs');
-const fs = require('fs'); // Necessario per leggere il file SQL
+import Database from 'better-sqlite3';
+import PocketBase from 'pocketbase';
+import fs from 'fs';
+import { SYNC_CONFIG, SYNC_ORDER } from './config/table_config.js';
+
 
 // ==========================================
 // CONFIGURATION & MAPPING
@@ -13,7 +15,7 @@ const args = process.argv.slice(2).reduce((acc, arg) => {
 }, {});
 
 // Lista dei parametri e comandi validi
-const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush', 'create'];
+const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush', 'create', 'config_file'];
 
 // 1. Controllo parametri sconosciuti
 const unknownArgs = Object.keys(args).filter(key => !VALID_ARGS.includes(key));
@@ -36,6 +38,7 @@ Options:
   --url=<url>       PocketBase server URL (default: http://127.0.0.1:8090)
   --user=<email>    PocketBase admin email
   --pass=<password> PocketBase admin password
+  --config_file=<nome_file>  Name of the config file to store last sync timestamp (default: .lastsync)
 
 Commands (can be combined):
   --init            Initialize technical columns and triggers in local DB
@@ -71,28 +74,6 @@ const PB_USER = args.user || process.env.PB_USER || 'admin@mmex.it';
 const PB_PASS = args.pass || process.env.PB_PASS || 'password123';
 const PB_URL = args.url || process.env.PB_URL || 'http://127.0.0.1:8090';
 const DB_PATH = args.db || process.env.DB_PATH || null;
-
-// Definizione delle tabelle da sincronizzare e dei campi da monitorare per il trigger
-const SYNC_CONFIG = {
-    'INFOTABLE_V1': { pk: 'INFOID', fields: ['INFONAME', 'INFOVALUE'] },
-    'CATEGORY_V1': { pk: 'CATEGID', fields: ['CATEGNAME', 'ACTIVE', 'PARENTID'] },
-    'PAYEE_V1': { pk: 'PAYEEID', fields: ['PAYEENAME', 'ACTIVE', 'CATEGID'] },
-    'ACCOUNTLIST_V1': { pk: 'ACCOUNTID', fields: ['ACCOUNTNAME', 'ACCOUNTTYPE', 'STATUS', 'FAVORITEACCT', 'INITIALDATE', 'INITIALBAL', 'CURRENCYID'] },
-    'CHECKINGACCOUNT_V1': { pk: 'TRANSID', fields: ['ACCOUNTID', 'TOACCOUNTID', 'PAYEEID', 'TRANSCODE', 'TRANSAMOUNT', 'STATUS', 'CATEGID', 'TRANSDATE', 'NOTES'] },
-    'BILLSDEPOSITS_V1': { pk: 'BDID', fields: ['ACCOUNTID', 'PAYEEID', 'TRANSCODE', 'TRANSAMOUNT', 'CATEGID', 'NEXTOCCURRENCEDATE'] },
-    //    'BUDGETSPLITTRANSACTIONS_V1': { pk: 'SPLITTRANSID', fields: ['TRANSID', 'CATEGID', 'SPLITTRANSAMOUNT'] }
-};
-
-// Ordine di sincronizzazione per rispettare le Foreign Keys
-const SYNC_ORDER = [
-    'INFOTABLE_V1',
-    'CATEGORY_V1',
-    'PAYEE_V1',
-    'ACCOUNTLIST_V1',
-    'CHECKINGACCOUNT_V1',
-    'BILLSDEPOSITS_V1',
-    //    'BUDGETSPLITTRANSACTIONS_V1'
-];
 
 // TODO: Change name from check_userVersion to isValidUserVersion
 async function check_userVersion(db, pb) {
@@ -263,19 +244,9 @@ async function syncPush(db, pb, tableName) {
     }
 }
 
-async function syncPull(db, pb, tableName) {
+async function syncPull(db, pb, tableName, lastSync) {
 
     const config = SYNC_CONFIG[tableName];
-
-    // Recuperiamo l'ultimo timestamp e sottraiamo 2 secondi per evitare di perdere transazioni 
-    // avvenute nello stesso secondo dell'ultimo sync
-    const lastSyncRow = db.prepare(`
-        SELECT datetime(MAX(pb_updated_at), '-2 seconds') as ts 
-        FROM ${tableName} 
-        WHERE pb_updated_at IS NOT NULL
-    `).get();
-
-    const lastSync = lastSyncRow && lastSyncRow.ts ? lastSyncRow.ts : '1970-01-01T00:00:00Z';
 
     let last_rmt = null;
 
@@ -394,10 +365,39 @@ async function main() {
         if (RUN_CLEAR) await clearRemoteServer(pb);
         if (RUN_INIT) initDB(db);
 
+        let globalLastSync = '1970-01-01 00:00:00.000Z';
+        const configFileName = args.config_file || '.lastsync';
+        const lastSyncFile = `${configFileName}`;
+        let pullStartTime = null;
+
+        if (RUN_PULL) {
+            if (fs.existsSync(lastSyncFile)) {
+                let fileContent = fs.readFileSync(lastSyncFile, 'utf8').trim();
+                if (fileContent) {
+                    // Sottraiamo 2 secondi per sicurezza
+                    let dateObj = new Date(fileContent);
+                    if (!isNaN(dateObj.getTime())) {
+                        dateObj.setSeconds(dateObj.getSeconds() - 2);
+                        globalLastSync = dateObj.toISOString().replace('T', ' ').substring(0, 19);
+                    } else {
+                        globalLastSync = fileContent;
+                    }
+                }
+            }
+            pullStartTime = new Date().toISOString().replace('T', ' ').substring(0, 19) + 'Z';
+            console.log(`[Pull] Using last sync time: ${globalLastSync}`);
+        }
+
         for (const table of SYNC_ORDER) {
             if (RUN_PUSH) await syncPush(db, pb, table);
-            if (RUN_PULL) await syncPull(db, pb, table);
+            if (RUN_PULL) await syncPull(db, pb, table, globalLastSync);
         }
+
+        if (RUN_PULL) {
+            fs.writeFileSync(lastSyncFile, pullStartTime, 'utf8');
+            console.log(`[Pull] Saved new last sync time: ${pullStartTime}`);
+        }
+
         console.log("\n✅ Global Sync Completed.");
     } catch (err) {
         console.error("Critical Sync Error:", err);

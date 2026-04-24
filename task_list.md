@@ -7,6 +7,11 @@
 
 ## Future Development (Project Extension)
 
+- [x] **Handle last sync time stamp**
+      Use this as value to sync only newer records from pocketbase to local db during pull phase. 
+      Value is set as time stime execution of last pulling operation.
+      store this not in  table but in a file in local folder "sync_data" with name .lastsync . add this file to .gitignore (never upload to git)
+
 - [ ] **Complete Database Schema Mapping**
   - Audit all remaining MMEX tables (e.g., `CURRENCYFORMATS_V1`, `BUDGET`, etc.).
   - Fully map all fields for every table within the `SYNC_CONFIG` configuration.
