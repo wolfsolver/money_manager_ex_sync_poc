@@ -12,7 +12,7 @@
       Value is set as time stime execution of last pulling operation.
       store this not in  table but in a file in local folder "sync_data" with name .lastsync . add this file to .gitignore (never upload to git)
 
-- [ ] **Complete Database Schema Mapping**
+- [x] **Complete Database Schema Mapping**
   - Audit all remaining MMEX tables (e.g., `CURRENCYFORMATS_V1`, `BUDGET`, etc.).
   - Fully map all fields for every table within the `SYNC_CONFIG` configuration.
   - Verify Foreign Key hierarchies to ensure the correct synchronization order for all tables.
@@ -35,10 +35,11 @@
   - Implement a "Last Write Wins" logic to handle simultaneous modifications across different devices simply and effectively.
 
 - [ ] **Real-time Service Mode (`--watch`)**
-  - [ ] **Local Watcher**: Implement `chokidar` (or native `fs.watch`) to monitor the `.mmb` file. Trigger a `syncPush` immediately when MMEX saves changes to the database.
+  - [X] **Lock during sync**: Lock db while push and pulling to prevent db corruption.
+  - [ ] **Local Watcher**: Implement `chokidar` (or native `fs.watch`) to monitor the `.mmb` file. Trigger a `syncPush` immediately when MMEX saves changes to the database. if DB is `SQLITE_BUSY`, wait and retry.
   - [ ] **Remote Watcher (PocketBase Realtime)**: Use the `pb.collection(table).subscribe('*', ...)` feature to listen for remote changes. This replaces periodic pulling with instantaneous updates.
   - [ ] **Concurrency Handling**: Implement a "debounce" mechanism to prevent multiple syncs from firing simultaneously if the file is saved multiple times in a few seconds.
-  - [ ] **SQLite Busy Management**: Add retry logic to handle `SQLITE_BUSY` errors, ensuring the script waits if MMEX has a temporary lock on the database file.
+  
 - [ ] **Android Integration Strategy**
   - [ ] **Mobile Client Research**: Evaluate the current MMEX Android codebase to identify the best injection point for the PocketBase sync logic.
   - [ ] **Kotlin/Java Implementation**: Port the logic from `sync_core.js` (Deterministic IDs, dirty flags, and triggers) to the Android SQLite implementation.

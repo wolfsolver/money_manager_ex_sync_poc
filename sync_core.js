@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import PocketBase from 'pocketbase';
 import fs from 'fs';
+import chokidar from 'chokidar';
 import { SYNC_CONFIG, SYNC_ORDER } from './config/table_config.js';
-
 
 // ==========================================
 // CONFIGURATION & MAPPING
@@ -15,7 +15,7 @@ const args = process.argv.slice(2).reduce((acc, arg) => {
 }, {});
 
 // Lista dei parametri e comandi validi
-const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush', 'create', 'config_file'];
+const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush', 'forcepull', 'create', 'config_file', 'watch', 'verbose'];
 
 // 1. Controllo parametri sconosciuti
 const unknownArgs = Object.keys(args).filter(key => !VALID_ARGS.includes(key));
@@ -48,8 +48,13 @@ Commands (can be combined):
   --help            Show this help message
   --forcepush       Push all records from local DB to PocketBase (not only dirty records)
                     Include --push
+  --forcepull       Pull all record from Pocketbase to local db (not only newer records)
+                    Include --pull
   --create          Create empty databse and all tables
                     Include --init
+  --watch           Run the script in watch mode, monitoring the database file for changes
+                    Include --push and --pull
+  --verbose         Enable verbose logging
 
 Notes:
   - If no command (--init, --push, --pull) is provided, the script runs all three by default.
@@ -59,11 +64,14 @@ Notes:
 }
 
 const RUN_FORCEPUSH = args.forcepush === true;
+const RUN_FORCEPULL = args.forcepull === true;
 const RUN_CLEAR = args.clearServer === true;
 const RUN_CREATE = args.create === true;
+const RUN_WATCH = args.watch === true;
+const RUN_VERBOSE = args.verbose === true;
 let RUN_INIT = args.init === true || args.create === true;
 let RUN_PUSH = args.push === true || RUN_FORCEPUSH;
-let RUN_PULL = args.pull === true;
+let RUN_PULL = args.pull === true || RUN_FORCEPULL;
 if (!RUN_INIT && !RUN_PUSH && !RUN_PULL && !RUN_CLEAR) { // no param.. all true
     RUN_INIT = true;
     RUN_PUSH = true;
@@ -81,15 +89,15 @@ async function check_userVersion(db, pb) {
     // remote Pragma is inside collection "dbInfo" record "PRAGMA_USER_VERSION_MIN"
     // if not, we cannot sync the local db must be updated before syncing remote db.
     const pragmaUserVersion = db.pragma(`user_version`)[0].user_version;
-    //console.log("Pragma user version: ", pragmaUserVersion);
+    if (RUN_VERBOSE) console.log("Pragma user version: ", pragmaUserVersion);
 
     const remotePragmaUserVersion = await pb.collection("dbInfo").getFirstListItem('KEY="PRAGMA_USER_VERSION_MIN"');
-    //console.log("Remote Pragma user version: ", remotePragmaUserVersion.VALUE);
+    if (RUN_VERBOSE) console.log("Remote Pragma user version: ", remotePragmaUserVersion.VALUE);
     if (pragmaUserVersion < remotePragmaUserVersion.VALUE) {
-        console.log(`[Sync] Pragma user version ${pragmaUserVersion} is smaller than remote database version ${remotePragmaUserVersion.VALUE}. Updating local database to match remote database...`);
+        console.log(`[Sync] ERROR: Pragma user version ${pragmaUserVersion} is smaller than remote database version ${remotePragmaUserVersion.VALUE}. Updating local database to match remote database...`);
         return false;
     }
-    console.log(`[Sync] Pragma user version ${pragmaUserVersion} is compatible with remote database version ${remotePragmaUserVersion.VALUE}. Syncing local to remote database...`);
+    if (RUN_VERBOSE) console.log(`[Sync] Pragma user version ${pragmaUserVersion} is compatible with remote database version ${remotePragmaUserVersion.VALUE}. Syncing local to remote database...`);
     return true;
 
 }
@@ -111,6 +119,7 @@ async function clearRemoteServer(pb) {
             console.log(`[Clear] Removing ${records.length} records from ${tableName}...`);
             for (const record of records) {
                 await pb.collection(tableName).delete(record.id);
+                if (RUN_VERBOSE) console.log(`[Clear] Removed record ${record.id} from ${tableName}...`);
             }
         } catch (e) {
             console.error(`  Error clearing table ${tableName}:`, e.message);
@@ -143,6 +152,8 @@ function initDB(db) {
         if (!colNames.includes('pb_updated_at')) db.exec(`ALTER TABLE ${tableName} ADD COLUMN pb_updated_at TEXT;`);
         if (!colNames.includes('pb_is_dirty')) db.exec(`ALTER TABLE ${tableName} ADD COLUMN pb_is_dirty INTEGER DEFAULT 0;`);
 
+        /*
+        // not used: we mcannot "merge" two local db. 
         // 2. Deterministic IDs (per record esistenti < 100 o tabelle config)
         // id need to be 15 char. use: systemconstxxxx
         //                             123456789012345
@@ -152,6 +163,7 @@ function initDB(db) {
             SET pb_id = '${prefix}' || printf('%04d', ${config.pk}), pb_is_dirty = 1
             WHERE (pb_id IS NULL OR pb_id = '') AND ${config.pk} < 1000
         `).run();
+        */
 
         // 3. Smart Triggers
         const whenClause = config.fields.map(f => `NEW.${f} IS NOT OLD.${f}`).join(' OR ');
@@ -201,6 +213,7 @@ async function syncPush(db, pb, tableName) {
                 const remoteRecord = await pb.collection(tableName).update(delRecord.pb_id, payload);
                 if (remoteRecord.is_deleted === 1) {
                     db.prepare(`DELETE FROM pb_DELETED_RECORDS_LOG WHERE id = ?`).run(delRecord.id);
+                    if (RUN_VERBOSE) console.log(`[Push] Deleted record ${delRecord.pb_id} from ${tableName}...`);
                 }
             } catch (e) {
                 console.error(`  Error pushing deletion for ${tableName} ID ${delRecord.pb_id}:`, e.message);
@@ -215,6 +228,7 @@ async function syncPush(db, pb, tableName) {
 
     console.log(`[Push] ${tableName}: Syncing ${records.length} changes...`);
     for (const record of records) {
+        if (RUN_VERBOSE) console.log(`[Push] ${tableName}: Syncing record ${record[config.pk]}...`);
         // Pulizia dati per PocketBase (evita -1 su campi numerici se necessario)
         const payload = { ...record };
         delete payload.pb_is_dirty; // Non serve al cloud
@@ -238,6 +252,7 @@ async function syncPush(db, pb, tableName) {
                 remoteRecord = await pb.collection(tableName).create({ id: record.pb_id, ...payload });
             }
             db.prepare(`UPDATE ${tableName} SET pb_is_dirty = 0, pb_id = ? WHERE ${config.pk} = ?`).run(remoteRecord.id, record[config.pk]);
+            if (RUN_VERBOSE) console.log(`[Push] ${tableName}: Synced record ${record[config.pk]}...`);
         } catch (e) {
             console.error(`  Error pushing ${tableName} ID ${record[config.pk]}:`, e.message);
         }
@@ -251,10 +266,17 @@ async function syncPull(db, pb, tableName, lastSync) {
     let last_rmt = null;
 
     try {
-        const remoteRecords = await pb.collection(tableName).getFullList({
-            filter: `updated > "${lastSync}"`,
-            sort: 'updated' // Opzionale: utile per mantenere l'ordine cronologico
-        });
+        let remoteRecords;
+        if (RUN_FORCEPULL || lastSync == null) {
+            remoteRecords = await pb.collection(tableName).getFullList({
+                sort: 'updated' // Opzionale: utile per mantenere l'ordine cronologico
+            });
+        } else {
+            remoteRecords = await pb.collection(tableName).getFullList({
+                filter: `updated > "${lastSync}"`,
+                sort: 'updated' // Opzionale: utile per mantenere l'ordine cronologico
+            });
+        }
 
         if (remoteRecords.length === 0) return;
         console.log(`[Pull] ${tableName}: Downloading ${remoteRecords.length} records...`);
@@ -319,11 +341,11 @@ function createEmptyDatabase(dbPath) {
         // 1. Legge ed esegue il file table_v1.sql
         const sqlSchema = fs.readFileSync('tables_v1_for_sync.sql', 'utf8');
         db.exec(sqlSchema);
-        console.log("[Create] SQL Schema applied successfully.");
+        if (RUN_VERBOSE) console.log("[Create] SQL Schema applied successfully.");
 
         // 2. Imposta il PRAGMA user_version a 21
         db.pragma('user_version = 21');
-        console.log("[Create] PRAGMA user_version set to 21.");
+        if (RUN_VERBOSE) console.log("[Create] PRAGMA user_version set to 21.");
 
         return db;
     } catch (err) {
@@ -333,11 +355,10 @@ function createEmptyDatabase(dbPath) {
     }
 }
 
-
 // ==========================================
 // MAIN EXECUTION
 // ==========================================
-async function main() {
+async function runSyncCycle() {
     const pb = new PocketBase(PB_URL);
     let db = null;
     if (DB_PATH == null) {
@@ -348,6 +369,8 @@ async function main() {
     }
 
     try {
+        await pb.admins.authWithPassword(PB_USER, PB_PASS);
+
         // Se RUN_CREATE è attivo, inizializza il DB prima di ogni altra operazione
         if (RUN_CREATE) {
             if (!DB_PATH) {
@@ -356,12 +379,14 @@ async function main() {
             }
             db = createEmptyDatabase(DB_PATH);
         } else if (DB_PATH != null) {
-            db = new Database(DB_PATH);
+            db = new Database(DB_PATH, { timeout: 5000 });
         }
 
-        await pb.admins.authWithPassword(PB_USER, PB_PASS);
-        if (db != null && (!await check_userVersion(db, pb))) return;
+        db.prepare('BEGIN IMMEDIATE').run();
+        console.log("[Lock] Local database locked for sync.");
 
+
+        if (db != null && (!await check_userVersion(db, pb))) return;
         if (RUN_CLEAR) await clearRemoteServer(pb);
         if (RUN_INIT) initDB(db);
 
@@ -373,37 +398,104 @@ async function main() {
         if (RUN_PULL) {
             if (fs.existsSync(lastSyncFile)) {
                 let fileContent = fs.readFileSync(lastSyncFile, 'utf8').trim();
-                if (fileContent) {
-                    // Sottraiamo 2 secondi per sicurezza
-                    let dateObj = new Date(fileContent);
-                    if (!isNaN(dateObj.getTime())) {
-                        dateObj.setSeconds(dateObj.getSeconds() - 2);
-                        globalLastSync = dateObj.toISOString().replace('T', ' ').substring(0, 19);
-                    } else {
-                        globalLastSync = fileContent;
-                    }
-                }
+                if (fileContent) globalLastSync = fileContent;
             }
-            pullStartTime = new Date().toISOString().replace('T', ' ').substring(0, 19) + 'Z';
+            pullStartTime = new Date().toISOString().replace('T', ' ');
             console.log(`[Pull] Using last sync time: ${globalLastSync}`);
         }
 
+        // TODO remote lock, remote table sync_lock need to be created...
+        // const lock = await pb.collection('sync_locks').create({ device: DB_PATH, expires: new Date(Date.now() + 60000) });
         for (const table of SYNC_ORDER) {
             if (RUN_PUSH) await syncPush(db, pb, table);
             if (RUN_PULL) await syncPull(db, pb, table, globalLastSync);
         }
+        // await pb.collection('sync_locks').delete(lock.id);
 
         if (RUN_PULL) {
             fs.writeFileSync(lastSyncFile, pullStartTime, 'utf8');
             console.log(`[Pull] Saved new last sync time: ${pullStartTime}`);
         }
 
+        // release lock
+        db.prepare('COMMIT').run();
+        console.log("[Lock] Local database unlocked (Changes committed).");
+
+
         console.log("\n✅ Global Sync Completed.");
     } catch (err) {
         console.error("Critical Sync Error:", err);
+        if (db && db.inTransaction) {
+            db.prepare('ROLLBACK').run();
+            console.log("[Lock] Local database unlocked (Rollback due to error).");
+        }
     } finally {
         if (db != null) db.close();
     }
+}
+
+
+async function startWatcher() {
+    console.log(`[Watcher] Monitoring for changes in: ${DB_PATH}`);
+
+    let isMyChange = 0;
+
+    const watcher = chokidar.watch(DB_PATH, {
+        persistent: true,
+        usePolling: true, // Necessario per file SQLite spesso bloccati
+        interval: 1000
+    });
+
+    watcher.on('change', async () => {
+        console.log("[Watcher] File change detected. isMyChange:", isMyChange);
+        if (isMyChange == 1) return;
+        if (isMyChange == 2) {
+            isMyChange = 0;
+            return;
+        }
+        isMyChange = 1;
+
+        console.log("\n[Watcher] File change detected. Starting sync...");
+
+        do {
+            try {
+                // Eseguiamo una sessione completa di Push/Pull
+                await runSyncCycle();
+            } catch (err) {
+                console.error("[Watcher] Sync failed:", err.message);
+            }
+        } while (false);
+
+        isMyChange = 2;
+        console.log("[Watcher] Sync cycle finished. Waiting for next change...");
+    });
+}
+
+async function main() {
+    const pb = new PocketBase(PB_URL);
+    let db = null;
+    if (DB_PATH == null) {
+        // olny perform RUN_CLEAR is set
+        RUN_INIT = false;
+        RUN_PULL = false;
+        RUN_PUSH = false;
+    }
+
+    if (RUN_CREATE) {
+        if (!DB_PATH) {
+            console.error("❌ Error: --db=<path> is required when using --create");
+            process.exit(1);
+        }
+        db = createEmptyDatabase(DB_PATH);
+        db.close();
+        RUN_CREATE = false;
+    }
+
+    await runSyncCycle();
+    if (RUN_WATCH) {
+        startWatcher();
+    }
+
 }
 
 main();

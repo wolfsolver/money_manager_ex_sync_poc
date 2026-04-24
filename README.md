@@ -66,8 +66,6 @@ You can run the sync engine by providing configuration via command-line argument
 
 ### Command Line Parameters
 ```bash
-Usage: node sync_core.js [options]
-
 Options:
   --db=<path>       Path to the local SQLite database (default: ./sample_db.mmb)
   --url=<url>       PocketBase server URL (default: http://127.0.0.1:8090)
@@ -83,8 +81,13 @@ Commands (can be combined):
   --help            Show this help message
   --forcepush       Push all records from local DB to PocketBase (not only dirty records)
                     Include --push
+  --forcepull       Pull all record from Pocketbase to local db (not only newer records)
+                    Include --pull
   --create          Create empty databse and all tables
                     Include --init
+  --watch           Run the script in watch mode, monitoring the database file for changes
+                    Include --push and --pull
+  --verbose         Enable verbose logging
 
 Notes:
   - If no command (--init, --push, --pull) is provided, the script runs all three by default.
