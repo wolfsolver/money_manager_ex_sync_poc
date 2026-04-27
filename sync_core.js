@@ -371,7 +371,7 @@ async function runSyncCycle() {
     }
 
     try {
-        await pb.collection('_superusers').authWithPassword(PB_USER, PB_PASS);
+        await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
 
         if (RUN_CLEAR) await clearRemoteServer(pb);
 
@@ -470,7 +470,7 @@ async function startWatcher() {
 
     try {
         const pb = new PocketBase(PB_URL);
-        await pb.collection('_superusers').authWithPassword(PB_USER, PB_PASS);
+        await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
         console.log("[Watcher] Connected to PocketBase for realtime updates.");
 
         for (const table of SYNC_ORDER) {
