@@ -17,9 +17,9 @@
         "id": "relation134319853",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid",
+		"presentable":false,
+		"required":false,
         "system": false,
         "type": "relation"
       },
@@ -369,7 +369,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_ACCOUNTLIST_V1` ON `ACCOUNTLIST_V1` (`ACCOUNTID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_ACCOUNTLIST_V1` ON `ACCOUNTLIST_V1` ( _userid, `ACCOUNTID`)"
     ],
     "system": false
   },
@@ -391,9 +391,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -604,7 +602,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_ASSETS_V1` ON `ASSETS_V1` (`ASSETID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_ASSETS_V1` ON `ASSETS_V1` ( _userid, `ASSETID`)"
     ],
     "system": false
   },
@@ -626,9 +624,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -753,7 +749,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_ATTACHMENT_V1` ON `ATTACHMENT_V1` (`ATTACHMENTID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_ATTACHMENT_V1` ON `ATTACHMENT_V1` ( _userid, `ATTACHMENTID`)"
     ],
     "system": false
   },
@@ -775,9 +771,9 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid",
+"presentable":false,
+"required":false,
         "system": false,
         "type": "relation"
       },
@@ -1064,7 +1060,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_BILLSDEPOSITS_V1` ON `BILLSDEPOSITS_V1` (`BDID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_BILLSDEPOSITS_V1` ON `BILLSDEPOSITS_V1` ( _userid, `BDID`)"
     ],
     "system": false
   },
@@ -1086,9 +1082,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -1209,7 +1203,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_BUDGETSPLITTRANSACTIONS_V1` ON `BUDGETSPLITTRANSACTIONS_V1` (`SPLITTRANSID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_BUDGETSPLITTRANSACTIONS_V1` ON `BUDGETSPLITTRANSACTIONS_V1` ( _userid, `SPLITTRANSID`)"
     ],
     "system": false
   },
@@ -1231,9 +1225,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -1382,7 +1374,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_BUDGETTABLE_V1` ON `BUDGETTABLE_V1` (`BUDGETENTRYID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_BUDGETTABLE_V1` ON `BUDGETTABLE_V1` ( _userid, `BUDGETENTRYID`)"
     ],
     "system": false
   },
@@ -1404,9 +1396,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -1488,7 +1478,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_BUDGETYEAR_V1` ON `BUDGETYEAR_V1` (`BUDGETYEARID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_BUDGETYEAR_V1` ON `BUDGETYEAR_V1` ( _userid, `BUDGETYEARID`)"
     ],
     "system": false
   },
@@ -1510,9 +1500,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -1620,7 +1608,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pbc_3133989299` ON `CATEGORY_V1` (`CATEGID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pbc_3133989299` ON `CATEGORY_V1` ( _userid, `CATEGID`)"
     ],
     "system": false
   },
@@ -1642,9 +1630,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -1920,7 +1906,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_CHECKINGACCOUNT_V1` ON `CHECKINGACCOUNT_V1` (`TRANSID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_CHECKINGACCOUNT_V1` ON `CHECKINGACCOUNT_V1` ( _userid, `TRANSID`)"
     ],
     "system": false
   },
@@ -1942,9 +1928,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -2172,7 +2156,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_CURRENCYFORMATS_V1` ON `CURRENCYFORMATS_V1` (`CURRENCYID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_CURRENCYFORMATS_V1` ON `CURRENCYFORMATS_V1` ( _userid, `CURRENCYID`)"
     ],
     "system": false
   },
@@ -2194,9 +2178,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -2317,7 +2299,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_CURRENCYHISTORY_V1` ON `CURRENCYHISTORY_V1` (`CURRHISTID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_CURRENCYHISTORY_V1` ON `CURRENCYHISTORY_V1` ( _userid, `CURRHISTID`)"
     ],
     "system": false
   },
@@ -2339,9 +2321,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -2449,7 +2429,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_CUSTOMFIELDDATA_V1` ON `CUSTOMFIELDDATA_V1` (`FIELDATADID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_CUSTOMFIELDDATA_V1` ON `CUSTOMFIELDDATA_V1` ( _userid, `FIELDATADID`)"
     ],
     "system": false
   },
@@ -2471,9 +2451,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -2600,7 +2578,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_CUSTOMFIELD_V1` ON `CUSTOMFIELD_V1` (`FIELDID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_CUSTOMFIELD_V1` ON `CUSTOMFIELD_V1` ( _userid, `FIELDID`)"
     ],
     "system": false
   },
@@ -2622,9 +2600,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -2721,7 +2697,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_INFOTABLE_V1` ON `INFOTABLE_V1` (`INFOID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_INFOTABLE_V1` ON `INFOTABLE_V1` ( _userid, `INFOID`)"
     ],
     "system": false
   },
@@ -2743,9 +2719,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -2913,7 +2887,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_PAYEE_V1` ON `PAYEE_V1` (`PAYEEID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_PAYEE_V1` ON `PAYEE_V1` ( _userid, `PAYEEID`)"
     ],
     "system": false
   },
@@ -2935,9 +2909,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -3107,7 +3079,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_REPORT_V1` ON `REPORT_V1` (`REPORTID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_REPORT_V1` ON `REPORT_V1` ( _userid, `REPORTID`)"
     ],
     "system": false
   },
@@ -3129,9 +3101,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -3265,7 +3235,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_SHAREINFO_V1` ON `SHAREINFO_V1` (`SHAREINFOID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_SHAREINFO_V1` ON `SHAREINFO_V1` ( _userid, `SHAREINFOID`)"
     ],
     "system": false
   },
@@ -3287,9 +3257,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -3410,7 +3378,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_SPLITTRANS_V1` ON `SPLITTRANSACTIONS_V1` (`SPLITTRANSID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_SPLITTRANS_V1` ON `SPLITTRANSACTIONS_V1` ( _userid, `SPLITTRANSID`)"
     ],
     "system": false
   },
@@ -3432,9 +3400,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -3557,7 +3523,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_STOCKHISTORY_V1` ON `STOCKHISTORY_V1` (`HISTID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_STOCKHISTORY_V1` ON `STOCKHISTORY_V1` ( _userid, `HISTID`)"
     ],
     "system": false
   },
@@ -3579,9 +3545,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -3786,7 +3750,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_STOCK_V1` ON `STOCK_V1` (`STOCKID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_STOCK_V1` ON `STOCK_V1` ( _userid, `STOCKID`)"
     ],
     "system": false
   },
@@ -3808,9 +3772,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -3918,7 +3880,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_TAGLINK_V1` ON `TAGLINK_V1` (`TAGLINKID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_TAGLINK_V1` ON `TAGLINK_V1` ( _userid, `TAGLINKID`)"
     ],
     "system": false
   },
@@ -3940,9 +3902,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -4037,7 +3997,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_TAG_V1` ON `TAG_V1` (`TAGID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_TAG_V1` ON `TAG_V1` ( _userid, `TAGID`)"
     ],
     "system": false
   },
@@ -4059,9 +4019,7 @@
         "id": "_userid",
         "maxSelect": 0,
         "minSelect": 0,
-        "name": "_userid",
-        "presentable": false,
-        "required": true,
+        "name":"_userid","presentable":false,"required":false,
         "system": false,
         "type": "relation"
       },
@@ -4169,7 +4127,7 @@
       }
     ],
     "indexes": [
-      "CREATE UNIQUE INDEX `idx_pk_pb_TRANSLINK_V1` ON `TRANSLINK_V1` (`TRANSLINKID`)"
+      "CREATE UNIQUE INDEX `idx_pk_pb_TRANSLINK_V1` ON `TRANSLINK_V1` ( _userid, `TRANSLINKID`)"
     ],
     "system": false
   },

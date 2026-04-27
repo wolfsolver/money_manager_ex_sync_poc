@@ -495,6 +495,9 @@ async function main() {
         RUN_PUSH = false;
     }
 
+    console.log(`[Sync] Starting sync for user ${PB_USER}`);
+    console.log(`[Sync]               using PB URL: ${PB_URL}`);
+    console.log(`[Sync]               using DB_PATH ${DB_PATH}`);
     if (RUN_CREATE) {
         if (!DB_PATH) {
             console.error("❌ Error: --db=<path> is required when using --create");
