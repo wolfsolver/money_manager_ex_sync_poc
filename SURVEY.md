@@ -5,6 +5,10 @@ Stop worrying about corrupted databases or data loss. I am developing a **record
 ![Money Manager Ex Sync - Record-Level Safe Sync Banner](assets/images/mmex-sync-banner.png)
 
 
+**Demo Video between Windows & Android**
+[Demo Video between Windows & Android🤩](https://drive.google.com/file/d/1pKFcdcNuf47BQDFQAtPBOCC_B_BfgwxF/view)
+
+
 ## 🛡️ Why This is Different
 Most users currently sync MMEX by moving the entire `.mmb` file via Dropbox, Google Drive, or Syncthing. **This is dangerous.** If two devices save at the same time, one version is lost forever.
 
@@ -14,13 +18,16 @@ Most users currently sync MMEX by moving the entire `.mmb` file via Dropbox, Goo
 - **No More Corrupted Files:** Since we don't overwrite the whole database, the risk of file corruption is virtually eliminated.
 - **Offline-First:** Work offline as usual; the sync engine merges your changes as soon as you are back online.
 
----
+## 📁 What about attachments? (Receipts, PDFs)
+Standard file-sync methods simply cannot sync attachments.
+
+- I am investigating a **Cloud Attachment Storage** feature.
+- This would allow you to take a photo of a receipt on your phone and have it immediately available on your PC, safely stored in a dedicated cloud space.
 
 ## 📊 Help Shape the Future
 I am building this to fix the most annoying limitation of MMEX. I need to know how you'd like to use it:
 
-Coming Soon...
-> ### [👉 Take the 2-minute Survey here](coming soon)
+### [👉 Take the 2-minute Survey here](https://docs.google.com/forms/d/e/1FAIpQLSfGGjVGEvB14j_h_dSCHGTs3W5N9RqmwBNYAgLtr6382zrtqQ/viewform?usp=publish-editor)
 
 *Tell me if you prefer to self-host your sync server or if you want a "zero-effort" managed service.*
 
@@ -45,5 +52,3 @@ This project is currently a **Proof of Concept (POC)**. It proves that we can mo
 
 - **GitHub Repository:** [wolfsolver/money_manager_ex_sync_poc](https://github.com/wolfsolver/money_manager_ex_sync_poc)
 
----
-*Developed by [wolfsolver](https://github.com/wolfsolver)*

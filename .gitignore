@@ -1,6 +1,6 @@
 node_modules/
 .env
 .DS_Store
-set_user_passwd.bat
 *.sqbpro
 sync_data/
+.lastsync

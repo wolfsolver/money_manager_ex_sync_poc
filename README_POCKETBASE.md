@@ -17,10 +17,4 @@ To test the POC, you need a PocketBase instance configured with the correct coll
 
 
 ## 3. API Rules (Security)
-For the POC is not implemented, but Pocketbase support multi users. In this case change: 
-    `await pb.admins.authWithPassword(PB_USER, PB_PASS);`
-to
-    `await pb.collection('users').authWithPassword(PB_USER, PB_PASS);`
-
-
-  
+Poc use only superadmin user. 
