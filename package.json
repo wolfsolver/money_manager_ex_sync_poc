@@ -13,7 +13,12 @@
   "dependencies": {
     "better-sqlite3": "^12.9.0",
     "chokidar": "^5.0.0",
+    "enquirer": "^2.4.1",
     "eventsource": "^4.1.0",
     "pocketbase": "^0.26.8"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "rcedit": "^5.0.2"
   }
 }

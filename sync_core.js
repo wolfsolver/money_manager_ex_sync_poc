@@ -9,12 +9,15 @@ import { SYNC_CONFIG, SYNC_ORDER } from './config/table_config.js';
 // ==========================================
 // CONFIGURATION & MAPPING
 // ==========================================
-const args = process.argv.slice(2).reduce((acc, arg) => {
-    const [key, value] = arg.split('=');
-    const cleanKey = key.replace('--', '');
-    acc[cleanKey] = value !== undefined ? value : true; // Gestisce flag senza valore come --init
-    return acc;
-}, {});
+let args = {};
+if (typeof process !== 'undefined' && process.argv) {
+    args = process.argv.slice(2).reduce((acc, arg) => {
+        const [key, value] = arg.split('=');
+        const cleanKey = key.replace('--', '');
+        acc[cleanKey] = value !== undefined ? value : true; // Gestisce flag senza valore come --init
+        return acc;
+    }, {});
+}
 
 // Lista dei parametri e comandi validi
 const VALID_ARGS = ['db', 'url', 'user', 'pass', 'init', 'push', 'pull', 'clearServer', 'help', 'forcepush', 'forcepull', 'create', 'config_file', 'watch', 'verbose'];
@@ -24,7 +27,7 @@ const unknownArgs = Object.keys(args).filter(key => !VALID_ARGS.includes(key));
 if (unknownArgs.length > 0) {
     console.error(`❌ Error: Unknown parameter(s): ${unknownArgs.join(', ')}`);
     console.log("Use --help to see the list of available commands.");
-    process.exit(1);
+    if (process.argv && process.argv.length > 2 && process.argv[1].includes('sync_core.js')) process.exit(1);
 }
 
 // ==========================================
@@ -38,8 +41,8 @@ Usage: node sync_core.js [options]
 Options:
   --db=<path>       Path to the local SQLite database (default: ./sample_db.mmb)
   --url=<url>       PocketBase server URL (default: http://127.0.0.1:8090)
-  --user=<email>    PocketBase admin email
-  --pass=<password> PocketBase admin password
+  --user=<email>    PocketBase email
+  --pass=<password> PocketBase password
   --config_file=<nome_file>  Name of the config file to store last sync timestamp (default: .lastsync)
 
 Commands (can be combined):
@@ -62,28 +65,50 @@ Notes:
   - If no command (--init, --push, --pull) is provided, the script runs all three by default.
   - The --clearServer command is executed before any other sync operation.
     `);
-    process.exit(0);
+    if (process.argv && process.argv.length > 2 && process.argv[1].includes('sync_core.js')) process.exit(0);
 }
 
-const RUN_FORCEPUSH = args.forcepush === true;
-const RUN_FORCEPULL = args.forcepull === true;
-const RUN_CLEAR = args.clearServer === true;
-const RUN_CREATE = args.create === true;
-const RUN_WATCH = args.watch === true;
-const RUN_VERBOSE = args.verbose === true;
-let RUN_INIT = args.init === true || args.create === true;
-let RUN_PUSH = args.push === true || RUN_FORCEPUSH;
-let RUN_PULL = args.pull === true || RUN_FORCEPULL;
-if (!RUN_INIT && !RUN_PUSH && !RUN_PULL && !RUN_CLEAR) { // no param.. all true
+export let RUN_FORCEPUSH = args.forcepush === true;
+export let RUN_FORCEPULL = args.forcepull === true;
+export let RUN_CLEAR = args.clearServer === true;
+export let RUN_CREATE = args.create === true;
+export let RUN_WATCH = args.watch === true;
+export let RUN_VERBOSE = args.verbose === true;
+export let RUN_INIT = args.init === true || args.create === true;
+export let RUN_PUSH = args.push === true || RUN_FORCEPUSH;
+export let RUN_PULL = args.pull === true || RUN_FORCEPULL;
+
+// se eseguito da riga di comando e non ci sono parametri di comando, esegue tutto
+if (!RUN_INIT && !RUN_PUSH && !RUN_PULL && !RUN_CLEAR && Object.keys(args).length > 0) { 
     RUN_INIT = true;
     RUN_PUSH = true;
     RUN_PULL = true;
 }
 
-const PB_USER = args.user || process.env.PB_USER || 'admin@mmex.it';
-const PB_PASS = args.pass || process.env.PB_PASS || 'password123';
-const PB_URL = args.url || process.env.PB_URL || 'http://127.0.0.1:8090';
-const DB_PATH = args.db || process.env.DB_PATH || null;
+export let PB_USER = args.user || process.env.PB_USER || '';
+export let PB_PASS = args.pass || process.env.PB_PASS || '';
+export let PB_URL = args.url || process.env.PB_URL || '';
+export let DB_PATH = args.db || process.env.DB_PATH || '';
+export let PB_TOKEN = '';
+export let CONFIG_FILE = args.config_file || '.lastsync';
+
+export function setSyncConfig(config) {
+    if (config.forcepush !== undefined) RUN_FORCEPUSH = config.forcepush;
+    if (config.forcepull !== undefined) RUN_FORCEPULL = config.forcepull;
+    if (config.clearServer !== undefined) RUN_CLEAR = config.clearServer;
+    if (config.create !== undefined) RUN_CREATE = config.create;
+    if (config.watch !== undefined) RUN_WATCH = config.watch;
+    if (config.verbose !== undefined) RUN_VERBOSE = config.verbose;
+    if (config.init !== undefined) RUN_INIT = config.init;
+    if (config.push !== undefined) RUN_PUSH = config.push;
+    if (config.pull !== undefined) RUN_PULL = config.pull;
+    if (config.user !== undefined) PB_USER = config.user;
+    if (config.pass !== undefined) PB_PASS = config.pass;
+    if (config.token !== undefined) PB_TOKEN = config.token;
+    if (config.url !== undefined) PB_URL = config.url;
+    if (config.db !== undefined) DB_PATH = config.db;
+    if (config.config_file !== undefined) CONFIG_FILE = config.config_file;
+}
 
 // TODO: Change name from check_userVersion to isValidUserVersion
 async function check_userVersion(db, pb) {
@@ -360,7 +385,7 @@ function createEmptyDatabase(dbPath) {
 // ==========================================
 // MAIN EXECUTION
 // ==========================================
-async function runSyncCycle() {
+export async function runSyncCycle() {
     const pb = new PocketBase(PB_URL);
     let db = null;
     if (DB_PATH == null) {
@@ -371,7 +396,11 @@ async function runSyncCycle() {
     }
 
     try {
-        await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
+        if (PB_TOKEN) {
+            pb.authStore.save(PB_TOKEN, null);
+        } else if (PB_PASS) {
+            await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
+        }
 
         if (RUN_CLEAR) await clearRemoteServer(pb);
 
@@ -396,8 +425,7 @@ async function runSyncCycle() {
         if (RUN_INIT) initDB(db);
 
         let globalLastSync = '1970-01-01 00:00:00.000Z';
-        const configFileName = args.config_file || '.lastsync';
-        const lastSyncFile = `${configFileName}`;
+        const lastSyncFile = CONFIG_FILE;
         let pullStartTime = null;
 
         if (RUN_PULL) {
@@ -470,7 +498,11 @@ async function startWatcher() {
 
     try {
         const pb = new PocketBase(PB_URL);
-        await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
+        if (PB_TOKEN) {
+            pb.authStore.save(PB_TOKEN, null);
+        } else if (PB_PASS) {
+            await pb.collection('users').authWithPassword(PB_USER, PB_PASS);
+        }
         console.log("[Watcher] Connected to PocketBase for realtime updates.");
 
         for (const table of SYNC_ORDER) {
@@ -485,7 +517,7 @@ async function startWatcher() {
     }
 }
 
-async function main() {
+export async function main() {
     const pb = new PocketBase(PB_URL);
     let db = null;
     if (DB_PATH == null) {
@@ -515,4 +547,7 @@ async function main() {
 
 }
 
-main();
+// Execute main only if the file is called directly
+if (typeof process !== 'undefined' && process.argv && process.argv.length > 1 && process.argv[1].includes('sync_core.js')) {
+    main();
+}

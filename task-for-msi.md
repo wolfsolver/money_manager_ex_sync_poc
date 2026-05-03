@@ -17,6 +17,8 @@
     * Path `mmex.exe` (es. `C:\Program Files\MMEX\mmex.exe`)
     * Path file `.mmb` del database.
 2.  **Gestione Token:** Dopo il primo login, salva l'auth token in modo sicuro con `keytar`.
+    * se necessario modifica sync_core.js per gestire il token per non salvare la password
+
 3.  **Workflow Esecuzione:**
     * controlla di avere accesso al file exe e al fil mmb e al sistema remoto (tocken valido). se no avvia la ui di benvenuto.
     * Esegui `sync_core.js` (Pull).
