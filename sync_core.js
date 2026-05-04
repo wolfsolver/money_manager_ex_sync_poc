@@ -79,7 +79,7 @@ export let RUN_PUSH = args.push === true || RUN_FORCEPUSH;
 export let RUN_PULL = args.pull === true || RUN_FORCEPULL;
 
 // se eseguito da riga di comando e non ci sono parametri di comando, esegue tutto
-if (!RUN_INIT && !RUN_PUSH && !RUN_PULL && !RUN_CLEAR && Object.keys(args).length > 0) { 
+if (!RUN_INIT && !RUN_PUSH && !RUN_PULL && !RUN_CLEAR && Object.keys(args).length > 0) {
     RUN_INIT = true;
     RUN_PUSH = true;
     RUN_PULL = true;
@@ -236,9 +236,9 @@ async function syncPush(db, pb, tableName) {
         for (const delRecord of deletedRecords) {
             try {
                 // we dont delete from pb directly. We use soft delete on pb
-                const payload = { is_deleted: 1 };
+                const payload = { _is_deleted: 1 };
                 const remoteRecord = await pb.collection(tableName).update(delRecord.pb_id, payload);
-                if (remoteRecord.is_deleted === 1) {
+                if (remoteRecord._is_deleted === 1) {
                     db.prepare(`DELETE FROM pb_DELETED_RECORDS_LOG WHERE id = ?`).run(delRecord.id);
                     if (RUN_VERBOSE) console.log(`[Push] Deleted record ${delRecord.pb_id} from ${tableName}...`);
                 }
@@ -260,7 +260,7 @@ async function syncPush(db, pb, tableName) {
         const payload = { ...record };
         delete payload.pb_is_dirty; // Non serve al cloud
         payload.id = payload.pb_id; delete payload.pb_id;
-        payload.updated_at = payload.pb_updated_at; delete payload.pb_updated_at;
+        payload._updated_at = payload.pb_updated_at; delete payload.pb_updated_at;
 
         Object.keys(payload).forEach(key => {
             if (payload[key] == null) {
@@ -270,19 +270,38 @@ async function syncPush(db, pb, tableName) {
         //        console.log("Payload: ", payload);
 
         let remoteRecord;
+        const pb_id = record.pb_id;
+
         try {
-            let remote;
-            try {
-                remote = await pb.collection(tableName).getOne(record.pb_id);
-                remoteRecord = await pb.collection(tableName).update(record.pb_id, payload);
-            } catch {
-                remoteRecord = await pb.collection(tableName).create({ id: record.pb_id, ...payload });
+            // Gestione logica: se ho un ID provo l'UPDATE, altrimenti vado diretto in CREATE
+            if (pb_id && pb_id.trim() !== "") {
+                try {
+                    remoteRecord = await pb.collection(tableName).update(pb_id, payload);
+                } catch (err) {
+                    if (err.status === 404) {
+                        // Il record aveva un ID ma non esiste sul server -> Lo creo con quell'ID
+                        if (RUN_VERBOSE) console.log(`[Push] ${tableName}: existing ID but not found on server. Now creating record ${record[config.pk]}...`);
+                        remoteRecord = await pb.collection(tableName).create({ id: pb_id, ...payload });
+                    } else {
+                        throw err; // Errore di validazione o permessi
+                    }
+                }
+            } else {
+                // CASO 1: ID Blank -> Creazione pura (PocketBase genererà l'ID)
+                remoteRecord = await pb.collection(tableName).create(payload);
             }
-            db.prepare(`UPDATE ${tableName} SET pb_is_dirty = 0, pb_id = ? WHERE ${config.pk} = ?`).run(remoteRecord.id, record[config.pk]);
+
+            // A questo punto remoteRecord contiene sicuramente l'ID finale (nuovo o esistente)
+            const updateSql = `UPDATE ${tableName} SET pb_is_dirty = 0, pb_id = ? WHERE ${config.pk} = ?`;
+            db.prepare(updateSql).run(remoteRecord.id, record[config.pk]);
+
             if (RUN_VERBOSE) console.log(`[Push] ${tableName}: Synced record ${record[config.pk]}...`);
+
         } catch (e) {
+            // Questo catch cattura errori di rete, permessi o fallimenti del DB locale
             console.error(`  Error pushing ${tableName} ID ${record[config.pk]}:`, e.message);
         }
+
     }
 }
 
@@ -296,12 +315,12 @@ async function syncPull(db, pb, tableName, lastSync) {
         let remoteRecords;
         if (RUN_FORCEPULL || lastSync == null) {
             remoteRecords = await pb.collection(tableName).getFullList({
-                sort: 'updated' // Opzionale: utile per mantenere l'ordine cronologico
+                sort: '_updated_at' // Opzionale: utile per mantenere l'ordine cronologico
             });
         } else {
             remoteRecords = await pb.collection(tableName).getFullList({
                 filter: `updated > "${lastSync}"`,
-                sort: 'updated' // Opzionale: utile per mantenere l'ordine cronologico
+                sort: '_updated_at' // Opzionale: utile per mantenere l'ordine cronologico
             });
         }
 
@@ -312,7 +331,7 @@ async function syncPull(db, pb, tableName, lastSync) {
             last_rmt = rmt;
 
             // we need to check if remote record is deleted on server
-            if (rmt.is_deleted === 1) {
+            if (rmt._is_deleted === 1) {
                 // ToDo: need to be checked if delete cause a loop . this statemetn will probbiliy trigger the update trigger
                 db.prepare(`DELETE FROM ${tableName} WHERE pb_id = ?`).run(rmt.id);
                 continue;
@@ -326,7 +345,7 @@ async function syncPull(db, pb, tableName, lastSync) {
                     UPDATE ${tableName} SET ${config.pk} = ?, ${config.fields.map(f => `${f} = ?`).join(', ')}, 
                     pb_updated_at = ?, pb_is_dirty = 2 WHERE pb_id = ?
                 `);
-                const values = [rmt[config.pk], ...config.fields.map(f => rmt[f]), rmt.updated, rmt.id];
+                const values = [rmt[config.pk], ...config.fields.map(f => rmt[f]), rmt._updated_at, rmt.id];
                 updateStmt.run(...values);
             } else {
                 // New ID remotely -> insert locally
@@ -337,7 +356,7 @@ async function syncPull(db, pb, tableName, lastSync) {
                 const placeholders = columns.map(() => '?').join(', ');
 
                 // Prepariamo i valori (mettiamo pb_is_dirty = 2)
-                const values = [rmt[config.pk], ...config.fields.map(f => rmt[f]), rmt.id, rmt.updated, 2];
+                const values = [rmt[config.pk], ...config.fields.map(f => rmt[f]), rmt.id, rmt._updated_at, 2];
 
                 const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
                 db.prepare(insertSql).run(...values);
