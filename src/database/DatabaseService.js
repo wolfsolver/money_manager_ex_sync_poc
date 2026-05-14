@@ -77,9 +77,11 @@ export class DatabaseService {
         this.db.prepare(`
             CREATE TRIGGER IF NOT EXISTS TRG_${table}_INSERT
             AFTER INSERT ON ${table}
-            FOR EACH ROW
+            FOR EACH ROW WHEN NEW.pb_is_dirty IS NOT 2
             BEGIN
-                UPDATE ${table} SET pb_is_dirty = 1 WHERE ROWID = NEW.ROWID;
+                UPDATE ${table} SET pb_is_dirty = 1,
+                       pb_updated_at = STRFTIME('%Y-%m-%dT%H:%M:%SZ', 'NOW')
+                       WHERE ROWID = NEW.ROWID;
             END
         `).run();
 
@@ -90,7 +92,9 @@ export class DatabaseService {
             AFTER UPDATE OF ${nonTechnicalColumnsString} ON ${table}
             WHEN (NEW.pb_is_dirty != 2) 
             BEGIN
-                UPDATE ${table} SET pb_is_dirty = 1 WHERE ROWID = NEW.ROWID;
+                UPDATE ${table} SET pb_is_dirty = 1, 
+                       pb_updated_at = STRFTIME('%Y-%m-%dT%H:%M:%SZ', 'NOW') 
+                       WHERE ROWID = NEW.ROWID;
             END
         `).run();
 
@@ -155,12 +159,17 @@ export class DatabaseService {
      * Manages upsert based on pb_id.
      */
     applyRemoteChanges(table, remoteRecord) {
-        const { id, _is_deleted, ...data } = remoteRecord;
+        let { id, _is_deleted, _updated_at, ...data } = remoteRecord;
+        // uf _updated_at is null set to now
+        if (!_updated_at) {
+            _updated_at = new Date().toISOString();
+        }
         const pb_id = id;
         const is_deleted = _is_deleted != 0;
 
         // Check if a record with this pb_id already exists
-        const localRecord = this.db.prepare(`SELECT ROWID FROM ${table} WHERE pb_id = ?`).get(pb_id);
+        let localRecord = this.db.prepare(`SELECT ROWID as ROWID FROM ${table} WHERE pb_id = ?`).get(pb_id);
+        const localRecordPk = localRecord?.ROWID;
 
         this.db.transaction(() => {
             if (localRecord) {
@@ -175,13 +184,13 @@ export class DatabaseService {
 
                     // Add state 2 to bypass local triggers
                     this.db.prepare(`
-                    UPDATE ${table} 
-                    SET ${setClause}, pb_is_dirty = 2 
-                    WHERE ROWID = ?
-                `).run(...values, localRecord.rowid);
+                        UPDATE ${table} 
+                        SET ${setClause}, pb_is_dirty = 2, pb_updated_at = ?
+                        WHERE ROWID = ?
+                    `).run(...values, _updated_at, localRecordPk); // was localRecord.rowid
 
                     // Reset to 0 (Synchronized)
-                    this.db.prepare(`UPDATE ${table} SET pb_is_dirty = 0 WHERE ROWID = ?`).run(localRecord.rowid);
+                    this.db.prepare(`UPDATE ${table} SET pb_is_dirty = 0 WHERE ROWID = ?`).run(localRecordPk);
 
                     if (this.verbose) console.log(`[DB] Updated ${table} (pb_id: ${pb_id})`);
                 }
@@ -190,17 +199,18 @@ export class DatabaseService {
                     // if not deleted, insert
                     const keys = this.schemas[table].fields;
                     const pk = this.schemas[table].pk;
-                    const columns = [pk, ...keys, 'pb_id', 'pb_is_dirty'].join(', ');
-                    const placeholders = ['?', ...keys.map(() => '?'), '?', '2'].join(', ');
-                    const values = [data[pk], ...keys.map(k => data[k]), pb_id];
+                    const columns = [pk, ...keys, 'pb_id', 'pb_is_dirty', 'pb_updated_at'].join(', ');
+                    const placeholders = ['?', ...keys.map(() => '?'), '?', '2', '?'].join(', ');
+                    const values = [data[pk], ...keys.map(k => data[k]), pb_id, _updated_at];
 
                     const result = this.db.prepare(`
                         INSERT INTO ${table} (${columns}) 
                         VALUES (${placeholders})
                      `).run(...values);
 
+                    const localRecordPk = result.lastInsertRowid;
                     // Reset to 0
-                    this.db.prepare(`UPDATE ${table} SET pb_is_dirty = 0 WHERE ROWID = ?`).run(result.lastInsertRowid);
+                    this.db.prepare(`UPDATE ${table} SET pb_is_dirty = 0 WHERE ROWID = ?`).run(localRecordPk);
 
                     if (this.verbose) console.log(`[DB] Inserted ${table} (pb_id: ${pb_id})`);
                 }

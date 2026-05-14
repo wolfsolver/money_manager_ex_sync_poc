@@ -23,8 +23,13 @@ export class SyncService {
         // console.log(`[Push] ${table}: elaborazione di ${dirtyRecords.length} record ${this.options.force ? '(MODALITÀ FORZATA)' : ''}`);
         const progress = new ProgressBarService(dirtyRecords.length)
 
-        for (const record of dirtyRecords) {
+        for (let record of dirtyRecords) {
             progress.update(`[Push] ${table}`);
+            if (!record.pb_updated_at) {
+                record.pb_updated_at = new Date().toISOString();
+            }
+            record._updated_at = record.pb_updated_at;
+            delete record.pb_updated_at;
             const { rowid, pb_id, pb_is_dirty, ...dataToSync } = record;
             let response;
 
@@ -100,6 +105,9 @@ export class SyncService {
 
             for (const remote of remoteRecords) {
                 progress.update(`[Pull] ${table}`);
+                if (remote.id === 'djpneq67vq27jqe') {
+                    console.log(`[Pull] Found record in ${table} (pb_id: ${remote.id})`);
+                }
                 try {
                     this.db.applyRemoteChanges(table, remote);
                 } catch (err) {

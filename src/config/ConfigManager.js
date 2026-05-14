@@ -40,7 +40,8 @@ export class ConfigManager {
             pbUser: this.cliArgs.user || this.config.pbUser,
             pbPass: this.cliArgs.pass || null, // The password is never saved in clear text
             mmexExe: this.cliArgs.exe || this.config.mmexExe || 'C:\\Program Files\\MoneyManagerEx\\bin\\mmex.exe',
-            defaultMode: this.cliArgs.setDefaultMode || this.config.defaultMode || 'sync'
+            defaultMode: this.cliArgs.setDefaultMode || this.config.defaultMode || 'sync',
+            lastSync: this.config.lastSync || null
         };
 
         // 3. If data is missing, ask via Prompt
@@ -127,6 +128,7 @@ export class ConfigManager {
             pbUser: configData.pbUser,
             mmexExe: configData.mmexExe,
             defaultMode: configData.defaultMode,
+            lastSync: configData.lastSync,
             encryptedToken: token ? protect(token) : this.config.encryptedToken
         };
 

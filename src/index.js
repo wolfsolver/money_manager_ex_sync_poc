@@ -36,7 +36,12 @@ async function main() {
         const config = await configMgr.getEffectiveConfig();
 
         // get full path of db
-        config.dbPath = path.resolve(config.dbPath);
+        const newDbPath = path.resolve(config.dbPath);
+        if (newDbPath != config.dbPath) {
+            config.dbPath = newDbPath;
+            // save config
+            await configMgr.save(config);
+        }
 
         // show all relevant parametert from configuration
         console.log("Path DB: " + config.dbPath);
