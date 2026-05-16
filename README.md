@@ -35,6 +35,25 @@ The Sync Engine operates as an external "Sidecar" process. It watches your SQLit
 > Using this script on your primary financial database is a great way to discover your inner "minimalist" by accidentally deleting your entire net worth. If your bank account suddenly looks as empty as a fridge on a Monday morning, don't say we didn't warn you! 💸🔥
 
 ---
+## 🌐 Server Hosting Options
+
+The Sync Engine requires a PocketBase backend to coordinate data across devices. You have two main options for setting up the server:
+
+### 1. Community Shared Server (Easiest)
+If you don't want to manage your own infrastructure, you can request access to the unofficial test shared instance hosted at:
+👉 **[mmex-sync.prudenzano.org](https://mmex-sync.prudenzano.org)**
+
+> [!NOTE]
+> Access to the shared server may require registration or approval. Please check the website for instructions on how to request your credentials.
+
+### 2. Self-Hosted Server (Private & Control)
+For maximum privacy and control over your financial data, you can easily deploy your own PocketBase instance on any cloud provider, VPS, or home server (e.g., Raspberry Pi, Docker, etc.).
+* Download PocketBase from the official website.
+* Deploy the required collections schema (see the `schema/` folder in this repository).
+* Use your custom URL during the first setup (e.g., `http://your-vps-ip:8090`).
+
+
+--- 
 
 ## 🕹️ How to Use
 
