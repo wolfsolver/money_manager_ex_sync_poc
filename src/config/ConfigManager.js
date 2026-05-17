@@ -33,14 +33,6 @@ export class ConfigManager {
             this.config = this._loadFromFile();
         }
 
-        // If the user passes --setDefaultMode, we validate it immediately
-        if (this.cliArgs.setDefaultMode) {
-            const validModes = ['sync', 'run', 'watch'];
-            if (!validModes.includes(this.cliArgs.setDefaultMode)) {
-                throw new Error(`Invalid mode. Choose from: ${validModes.join(', ')}`);
-            }
-        }
-
         // 2. Define required parameters and resolve the origin
         const schema = {
             dbPath: this.cliArgs.db || this.config.dbPath,
@@ -117,6 +109,32 @@ export class ConfigManager {
         } catch (e) {
             console.error(`⚠️ Error reading profile ${profileToLoad}:`, e.message);
         }
+    }
+
+    /**
+     * Updates the default mode in the profile and saves it
+     */
+    setDefaultMode(mode) {
+        if (typeof mode !== 'string') {
+            console.error(`❌ Please specify a mode, e.g. --setDefaultMode=watch`);
+            return false;
+        }
+
+        const validModes = ['sync', 'run', 'watch'];
+        if (!validModes.includes(mode)) {
+            console.error(`❌ Invalid mode '${mode}'. Choose from: ${validModes.join(', ')}`);
+            return false;
+        }
+
+        this.config = this._loadFromFile();
+        if (Object.keys(this.config).length === 0) {
+            console.error(`❌ Profile '${this.profile}' not found or empty. Cannot set default mode.`);
+            return false;
+        }
+
+        this.config.defaultMode = mode;
+        this.save(this.config);
+        return true;
     }
 
     _loadFromFile() {
